@@ -67,24 +67,17 @@ class ProfileScreen extends ConsumerWidget {
               ],
             ),
           ),
-          const SectionHeader('Prototype'),
+          const SectionHeader('Demo'),
           Card(
             clipBehavior: Clip.antiAlias,
             child: ListTile(
               leading: const Icon(Icons.swap_horiz),
-              title: const Text('Switch sample user'),
-              subtitle: const Text('See the app as another member'),
+              title: const Text('Switch demo user'),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => showSampleUserSheet(context, ref),
             ),
           ),
-          const SizedBox(height: 12),
-          const InfoBanner(
-            tone: BannerTone.prototype,
-            message:
-                'This is a prototype for user testing. Data is sample data kept in memory on this '
-                'device and resets when the app restarts. Login codes are not real SMS messages.',
-          ),
+
           const SizedBox(height: 24),
           OutlinedButton.icon(
             onPressed: () => ref.read(authRepositoryProvider).signOut(),

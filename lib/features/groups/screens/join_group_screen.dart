@@ -100,7 +100,7 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
         padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
         children: [
           Text(
-            'Ask a member for the group code. They can find it on the group\'s settings screen.',
+            'Ask a member for the group code.',
             style: context.text.bodyMedium?.copyWith(color: context.appColors.muted),
           ),
           const SizedBox(height: 16),
@@ -153,12 +153,7 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            const InfoBanner(
-              icon: Icons.lock_outline,
-              message:
-                  'Any current member can approve your request. '
-                  'You\'ll see the group\'s expenses only after you\'re approved.',
-            ),
+            const InfoBanner(icon: Icons.lock_outline, message: 'A member will need to approve you.'),
             const SectionHeader('Your details'),
             TextField(
               controller: _name,

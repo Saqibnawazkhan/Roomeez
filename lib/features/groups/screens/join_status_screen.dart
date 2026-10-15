@@ -61,19 +61,19 @@ class _JoinStatusScreenState extends ConsumerState<JoinStatusScreen> {
         Icons.hourglass_top_rounded,
         context.colors.tertiary,
         'Waiting for approval',
-        'Your request to join "${request.groupName}" was sent. Any current member can approve it.',
+        'A member of "${request.groupName}" needs to approve you.',
       ),
       JoinRequestStatus.approved => (
         Icons.check_circle_rounded,
         context.appColors.positive,
         'You\'re in!',
-        'Your request to join "${request.groupName}" was approved.',
+        'Welcome to "${request.groupName}".',
       ),
       JoinRequestStatus.declined => (
         Icons.cancel_outlined,
         context.colors.error,
         'Request declined',
-        'A member of "${request.groupName}" declined your request. Check with them if this was a mistake.',
+        'Your request to join "${request.groupName}" was declined.',
       ),
     };
 
@@ -109,9 +109,7 @@ class _JoinStatusScreenState extends ConsumerState<JoinStatusScreen> {
         else if (request.isPending) ...[
           InfoBanner(
             tone: BannerTone.prototype,
-            message:
-                'Prototype: in the real app a member approves this from their phone. '
-                'You can simulate that here.',
+            message: 'Demo: approve as a member.',
             action: _busy
                 ? const Padding(
                     padding: EdgeInsets.all(6),
@@ -120,7 +118,7 @@ class _JoinStatusScreenState extends ConsumerState<JoinStatusScreen> {
                 : TextButton(
                     style: TextButton.styleFrom(padding: EdgeInsets.zero, visualDensity: VisualDensity.compact),
                     onPressed: _simulateApproval,
-                    child: const Text('Simulate approval by a member'),
+                    child: const Text('Approve now'),
                   ),
           ),
           const SizedBox(height: 12),

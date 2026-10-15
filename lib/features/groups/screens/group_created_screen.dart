@@ -44,8 +44,7 @@ class GroupCreatedScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                'Share the code with your flatmates so they can join. '
-                'Members you added can sign up with their number to see the group.',
+                'Share the code so others can join.',
                 textAlign: TextAlign.center,
                 style: context.text.bodyMedium?.copyWith(color: context.appColors.muted),
               ),

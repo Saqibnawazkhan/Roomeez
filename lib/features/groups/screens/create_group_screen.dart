@@ -142,10 +142,7 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text('${user?.name ?? ''} (you)', style: const TextStyle(fontWeight: FontWeight.w700)),
-                        Text(
-                          'Added automatically as group manager',
-                          style: context.text.bodySmall?.copyWith(color: context.appColors.muted),
-                        ),
+                        Text('Group manager', style: context.text.bodySmall?.copyWith(color: context.appColors.muted)),
                       ],
                     ),
                   ),
@@ -177,18 +174,15 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
                 label: const Text('Add another member'),
               ),
             ),
-            Text(
-              'You can also add members later, or share the group code so people can request to join.',
-              style: context.text.bodySmall?.copyWith(color: context.appColors.muted),
-            ),
+
             const SectionHeader('Group fund'),
             AppCard(
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
               child: SwitchListTile(
                 value: _withFund,
                 onChanged: (v) => setState(() => _withFund = v),
-                title: const Text('Record initial contributions', style: TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: const Text('Money members put into a shared fund. This is not an expense.'),
+                title: const Text('Start with a group fund', style: TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: const Text('Optional shared money pool'),
               ),
             ),
             if (_withFund) ...[
@@ -208,7 +202,7 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
                     onChanged: () => setState(() {}),
                   ),
               const SizedBox(height: 4),
-              InfoBanner(tone: BannerTone.fund, message: 'Initial contributions total: ${Money.format(_fundTotal)}'),
+              InfoBanner(tone: BannerTone.fund, message: 'Fund total: ${Money.format(_fundTotal)}'),
             ],
           ],
         ),

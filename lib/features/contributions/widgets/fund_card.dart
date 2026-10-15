@@ -25,7 +25,7 @@ class FundCard extends StatelessWidget {
             style: TextButton.styleFrom(foregroundColor: colors.onFundContainer, visualDensity: VisualDensity.compact),
             onPressed: () => context.push(Routes.addContribution(snapshot.group.id)),
             icon: const Icon(Icons.add, size: 18),
-            label: const Text('Add contribution'),
+            label: const Text('Add money'),
           )
         : null;
 
@@ -50,10 +50,6 @@ class FundCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: Text('All time', style: context.text.labelSmall?.copyWith(color: colors.onFundContainer)),
-                ),
               ],
             ),
             if (!fund.hasFund) ...[
@@ -61,7 +57,7 @@ class FundCard extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: Text(
-                  'No contributions yet. A shared fund is optional; members can also pay from their own pocket.',
+                  'No money added yet.',
                   style: context.text.bodySmall?.copyWith(color: colors.onFundContainer),
                 ),
               ),
@@ -69,9 +65,9 @@ class FundCard extends StatelessWidget {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Expanded(child: _figure(context, 'Contributions', fund.contributedPaisa)),
-                  Expanded(child: _figure(context, 'Spent from fund', fund.spentPaisa)),
-                  Expanded(child: _figure(context, 'Remaining', fund.remainingPaisa, emphasize: true)),
+                  Expanded(child: _figure(context, 'Added', fund.contributedPaisa)),
+                  Expanded(child: _figure(context, 'Spent', fund.spentPaisa)),
+                  Expanded(child: _figure(context, 'Left', fund.remainingPaisa, emphasize: true)),
                 ],
               ),
             ],

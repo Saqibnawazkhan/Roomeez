@@ -195,7 +195,7 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
       }
       if (!mounted) return;
       context.pop();
-      showAppSnack(context, _isEditing ? 'Expense updated' : 'Expense added for everyone in the group');
+      showAppSnack(context, _isEditing ? 'Expense updated' : 'Expense added');
     } catch (error) {
       if (mounted) showAppSnack(context, describeError(error), isError: true);
     } finally {
@@ -295,24 +295,11 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
         children: [
-          if (_isEditing && existing != null) ...[
-            InfoBanner(
-              icon: Icons.edit_note,
-              message:
-                  'You added this expense, so you can correct it. '
-                  'It will be marked "Edited" for everyone in the group.',
-            ),
-            const SizedBox(height: 12),
-          ],
           TextFormField(
             controller: _title,
             textCapitalization: TextCapitalization.sentences,
             maxLength: ExpenseValidator.maxTitleLength,
-            decoration: const InputDecoration(
-              labelText: 'Title or short description',
-              hintText: 'e.g. Weekly groceries',
-              counterText: '',
-            ),
+            decoration: const InputDecoration(labelText: 'Title', hintText: 'e.g. Weekly groceries', counterText: ''),
             validator: (v) => (v ?? '').trim().isEmpty ? 'Add a title' : null,
           ),
           const SizedBox(height: 12),
@@ -342,10 +329,10 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
           const SectionHeader('Amount'),
           SegmentedButton<_EntryMode>(
             segments: const [
-              ButtonSegment(value: _EntryMode.itemized, label: Text('Itemized'), icon: Icon(Icons.list_alt)),
+              ButtonSegment(value: _EntryMode.itemized, label: Text('Items'), icon: Icon(Icons.list_alt)),
               ButtonSegment(
                 value: _EntryMode.singleAmount,
-                label: Text('Single amount'),
+                label: Text('Total only'),
                 icon: Icon(Icons.payments_outlined),
               ),
             ],
@@ -374,16 +361,11 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
               icon: const Icon(Icons.add),
               label: const Text('Add item'),
             ),
-            const SizedBox(height: 6),
-            Text(
-              'Line total = quantity × price per item. Quantities can have decimals, e.g. 1.5 kg.',
-              style: context.text.bodySmall?.copyWith(color: context.appColors.muted),
-            ),
           ] else
             TextFormField(
               controller: _amount,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(labelText: 'Total amount', prefixText: 'PKR '),
+              decoration: const InputDecoration(labelText: 'Amount', prefixText: 'PKR '),
               onChanged: (_) => setState(() {}),
               validator: (v) {
                 if (_mode != _EntryMode.singleAmount) return null;
@@ -393,14 +375,10 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
                 return null;
               },
             ),
-          const SectionHeader('Payment'),
+          const SectionHeader('Paid from'),
           SegmentedButton<PaymentSource>(
             segments: const [
-              ButtonSegment(
-                value: PaymentSource.personal,
-                label: Text('Personal money'),
-                icon: Icon(Icons.person_outline),
-              ),
+              ButtonSegment(value: PaymentSource.personal, label: Text('Own pocket'), icon: Icon(Icons.person_outline)),
               ButtonSegment(
                 value: PaymentSource.groupFund,
                 label: Text('Group fund'),
@@ -412,7 +390,7 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
           ),
           const SizedBox(height: 12),
           if (_source == PaymentSource.personal) ...[
-            Text('Who paid?', style: context.text.labelLarge),
+            Text('Paid by', style: context.text.labelLarge),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
@@ -428,20 +406,17 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
                   ),
               ],
             ),
-            const SizedBox(height: 6),
-            Text(
-              'You are recorded as the person who added this expense, even if someone else paid.',
-              style: context.text.bodySmall?.copyWith(color: context.appColors.muted),
-            ),
           ] else
-            InfoBanner(
-              tone: _total > fundAvailable ? BannerTone.warning : BannerTone.fund,
-              message: _total > fundAvailable
-                  ? 'This is more than the ${Money.format(fundAvailable)} left in the group fund.'
-                  : 'Paid from the group fund. ${Money.format(fundAvailable)} available.',
+            Text(
+              _total > fundAvailable
+                  ? 'Only ${Money.format(fundAvailable)} left in the group fund.'
+                  : '${Money.format(fundAvailable)} left in the group fund.',
+              style: context.text.bodySmall?.copyWith(
+                color: _total > fundAvailable ? context.colors.error : context.appColors.muted,
+              ),
             ),
           SectionHeader(
-            'Shared between',
+            'Split between',
             trailing: TextButton(
               onPressed: () => setState(() {
                 _splitTouched = true;
@@ -471,18 +446,17 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
           if (excluded.isNotEmpty) ...[
             const SizedBox(height: 8),
             Text(
-              '${excluded.map((m) => m.displayName).join(', ')} joined after ${AppDates.day(_date)}, '
-              'so they don\'t share this expense.',
+              '${excluded.map((m) => m.displayName.split(' ').first).join(', ')} joined later, so not included.',
               style: context.text.bodySmall?.copyWith(color: context.appColors.muted),
             ),
           ],
-          const SectionHeader('Notes (optional)'),
+          const SizedBox(height: 20),
           TextFormField(
             controller: _notes,
             textCapitalization: TextCapitalization.sentences,
             maxLines: 3,
-            minLines: 2,
-            decoration: const InputDecoration(hintText: 'Anything the group should know'),
+            minLines: 1,
+            decoration: const InputDecoration(labelText: 'Note (optional)'),
           ),
         ],
       ),

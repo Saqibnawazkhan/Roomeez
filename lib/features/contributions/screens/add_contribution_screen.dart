@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/providers.dart';
-import '../../../app/theme/app_theme.dart';
 import '../../../core/errors/app_exception.dart';
 import '../../../core/utils/dates.dart';
 import '../../../core/utils/money.dart';
@@ -54,7 +53,7 @@ class _AddContributionScreenState extends ConsumerState<AddContributionScreen> {
           );
       if (!mounted) return;
       context.pop();
-      showAppSnack(context, 'Contribution recorded in the group fund');
+      showAppSnack(context, 'Added to group fund');
     } catch (error) {
       if (mounted) showAppSnack(context, describeError(error), isError: true);
     } finally {
@@ -66,7 +65,7 @@ class _AddContributionScreenState extends ConsumerState<AddContributionScreen> {
   Widget build(BuildContext context) {
     final snapshot = ref.watch(groupSnapshotProvider(widget.groupId));
     return Scaffold(
-      appBar: AppBar(title: const Text('Add contribution')),
+      appBar: AppBar(title: const Text('Add to group fund')),
       body: snapshot.when(
         loading: () => const LoadingView(),
         error: (error, _) => ErrorView(error: error),
@@ -77,13 +76,7 @@ class _AddContributionScreenState extends ConsumerState<AddContributionScreen> {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
               children: [
-                const InfoBanner(
-                  tone: BannerTone.fund,
-                  message:
-                      'Contributions go into the group fund that expenses can be paid from. '
-                      'They are not expenses and are not counted in total expenses.',
-                ),
-                const SectionHeader('Who is contributing?'),
+                const SectionHeader('Who is adding money?', padding: EdgeInsets.fromLTRB(4, 8, 4, 8)),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
@@ -136,18 +129,13 @@ class _AddContributionScreenState extends ConsumerState<AddContributionScreen> {
                   textCapitalization: TextCapitalization.sentences,
                   decoration: const InputDecoration(labelText: 'Note (optional)', hintText: 'e.g. October top-up'),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'Recorded by ${s.nameOf(s.viewerUserId)}.',
-                  style: context.text.bodySmall?.copyWith(color: context.appColors.muted),
-                ),
               ],
             ),
           );
         },
       ),
       bottomNavigationBar: BottomActionBar(
-        child: BusyButton(label: 'Record contribution', busy: _busy, onPressed: _save),
+        child: BusyButton(label: 'Add money', busy: _busy, onPressed: _save),
       ),
     );
   }

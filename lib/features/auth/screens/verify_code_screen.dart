@@ -58,17 +58,17 @@ class _VerifyCodeScreenState extends ConsumerState<VerifyCodeScreen> {
             Text('Enter the code', style: context.text.headlineSmall?.copyWith(fontWeight: FontWeight.w800)),
             const SizedBox(height: 8),
             Text(
-              'We sent a 6-digit code to ${PhoneNumber.format(widget.phone)}.',
+              'Sent to ${PhoneNumber.format(widget.phone)}',
               style: context.text.bodyLarge?.copyWith(color: context.appColors.muted),
             ),
             const SizedBox(height: 16),
             InfoBanner(
               tone: BannerTone.prototype,
-              message: 'Prototype: no SMS is actually sent. Use code ${MockAuthRepository.demoCode}.',
+              message: 'Demo code: ${MockAuthRepository.demoCode}',
               action: TextButton(
                 style: TextButton.styleFrom(padding: EdgeInsets.zero, visualDensity: VisualDensity.compact),
                 onPressed: () => _code.text = MockAuthRepository.demoCode,
-                child: const Text('Fill in the code'),
+                child: const Text('Use it'),
               ),
             ),
             const SizedBox(height: 20),

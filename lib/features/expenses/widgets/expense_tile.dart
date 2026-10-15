@@ -22,20 +22,25 @@ class ExpenseTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final e = expense;
     final muted = context.appColors.muted;
-    final payer = e.paymentSource == PaymentSource.groupFund ? 'Group fund' : snapshot.nameOf(e.paidByUserId);
-    final addedBy = snapshot.nameOf(e.createdByUserId);
-    final meta = <String>[
+    final addedBy = snapshot.nameOf(e.createdByUserId).split(' ').first;
+    final String paid;
+    if (e.paymentSource == PaymentSource.groupFund) {
+      paid = 'Group fund';
+    } else {
+      final payer = snapshot.nameOf(e.paidByUserId).split(' ').first;
+      paid = payer == addedBy ? payer : '$payer (added by $addedBy)';
+    }
+    final subtitle = [
       if (showDate) AppDates.relativeDay(e.date),
-      e.category.label,
+      paid,
       if (e.isItemized) '${e.items.length} ${e.items.length == 1 ? 'item' : 'items'}',
-    ].join('  ·  ');
+    ].join(' · ');
 
     return InkWell(
       onTap: () => context.push(Routes.expense(e.groupId, e.id)),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             CategoryIcon(e.category, muted: e.isVoided),
             const SizedBox(width: 12),
@@ -51,7 +56,7 @@ class ExpenseTile extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: context.text.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w600,
                             decoration: e.isVoided ? TextDecoration.lineThrough : null,
                             color: e.isVoided ? muted : null,
                           ),
@@ -62,14 +67,7 @@ class ExpenseTile extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    payer == addedBy ? 'Added and paid by $addedBy' : 'Added by $addedBy  ·  Paid by $payer',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: context.text.bodySmall?.copyWith(color: muted),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    meta,
+                    subtitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: context.text.bodySmall?.copyWith(color: muted),
@@ -78,40 +76,14 @@ class ExpenseTile extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                AmountText(
-                  e.totalPaisa,
-                  strikethrough: e.isVoided,
-                  style: context.text.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: e.isVoided ? muted : null,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                _SourceTag(source: e.paymentSource),
-              ],
+            AmountText(
+              e.totalPaisa,
+              strikethrough: e.isVoided,
+              style: context.text.titleSmall?.copyWith(fontWeight: FontWeight.w700, color: e.isVoided ? muted : null),
             ),
           ],
         ),
       ),
-    );
-  }
-}
-
-class _SourceTag extends StatelessWidget {
-  const _SourceTag({required this.source});
-
-  final PaymentSource source;
-
-  @override
-  Widget build(BuildContext context) {
-    final fund = source == PaymentSource.groupFund;
-    return Pill(
-      fund ? 'Group fund' : 'Personal',
-      color: fund ? context.appColors.fund : context.appColors.muted,
-      icon: fund ? Icons.savings_outlined : Icons.person_outline,
     );
   }
 }

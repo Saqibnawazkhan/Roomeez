@@ -64,10 +64,10 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
           child: ListView(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             children: [
-              Text('Set up your profile', style: context.text.headlineSmall?.copyWith(fontWeight: FontWeight.w800)),
+              Text('What\'s your name?', style: context.text.headlineSmall?.copyWith(fontWeight: FontWeight.w800)),
               const SizedBox(height: 8),
               Text(
-                'Your name is shown to members of your groups next to the expenses you add.',
+                'Your group members will see this name.',
                 style: context.text.bodyLarge?.copyWith(color: context.appColors.muted),
               ),
               const SizedBox(height: 24),
@@ -75,8 +75,8 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                 InfoBanner(
                   icon: Icons.group_add_outlined,
                   message: invitedGroups.length == 1
-                      ? 'A member already added this number to "${invitedGroups.first.name}". You\'ll see it after setup.'
-                      : 'Members already added this number to ${invitedGroups.length} groups. You\'ll see them after setup.',
+                      ? 'You\'ve been added to "${invitedGroups.first.name}".'
+                      : 'You\'ve been added to ${invitedGroups.length} groups.',
                 ),
                 const SizedBox(height: 16),
               ],

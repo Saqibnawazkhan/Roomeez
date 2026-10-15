@@ -63,9 +63,7 @@ class _PhoneEntryScreenState extends ConsumerState<PhoneEntryScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                signUp
-                    ? 'Enter your mobile number. We\'ll send a code to confirm it\'s you.'
-                    : 'Log in with the mobile number you signed up with.',
+                signUp ? 'We\'ll send a code to your mobile number.' : 'Enter your mobile number.',
                 style: context.text.bodyLarge?.copyWith(color: context.appColors.muted),
               ),
               const SizedBox(height: 28),
@@ -80,9 +78,8 @@ class _PhoneEntryScreenState extends ConsumerState<PhoneEntryScreen> {
                   hintText: '0300 1234567',
                   prefixIcon: Icon(Icons.phone_iphone),
                 ),
-                validator: (value) => PhoneNumber.normalize(value ?? '') == null
-                    ? 'Enter a valid Pakistani mobile number, e.g. 0300 1234567'
-                    : null,
+                validator: (value) =>
+                    PhoneNumber.normalize(value ?? '') == null ? 'Enter a valid number, e.g. 0300 1234567' : null,
                 onFieldSubmitted: (_) => _continue(),
               ),
               const SizedBox(height: 24),

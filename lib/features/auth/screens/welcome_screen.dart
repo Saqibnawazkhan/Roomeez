@@ -17,7 +17,8 @@ class WelcomeScreen extends ConsumerWidget {
           builder: (context, constraints) => SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
             child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraints.maxHeight - 40),
+              // Minus the vertical padding; never negative (e.g. on the first frame).
+              constraints: BoxConstraints(minHeight: (constraints.maxHeight - 40).clamp(0, double.infinity)),
               child: IntrinsicHeight(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -26,29 +27,13 @@ class WelcomeScreen extends ConsumerWidget {
                     const _LogoMark(),
                     const SizedBox(height: 28),
                     Text(
-                      'Shared living,\nclearly recorded.',
+                      'Shared expenses,\nmade simple.',
                       style: context.text.headlineMedium?.copyWith(fontWeight: FontWeight.w800, height: 1.15),
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'Roomeez helps flatmates, roommates and hostel residents keep one honest record of shared expenses.',
+                      'One clear record for everyone you live with.',
                       style: context.text.bodyLarge?.copyWith(color: context.appColors.muted, height: 1.4),
-                    ),
-                    const SizedBox(height: 28),
-                    const _Point(
-                      icon: Icons.receipt_long_outlined,
-                      title: 'Itemized expenses',
-                      body: 'Every member sees what was bought, by whom, and for how much.',
-                    ),
-                    const _Point(
-                      icon: Icons.verified_user_outlined,
-                      title: 'Records you can trust',
-                      body: 'Only the person who added an expense can edit it. Nothing gets erased.',
-                    ),
-                    const _Point(
-                      icon: Icons.picture_as_pdf_outlined,
-                      title: 'Period reports',
-                      body: 'Share a PDF summary for any date range.',
                     ),
                     const Spacer(),
                     const SizedBox(height: 24),
@@ -68,8 +53,8 @@ class WelcomeScreen extends ConsumerWidget {
                     Center(
                       child: TextButton.icon(
                         onPressed: () => showSampleUserSheet(context, ref),
-                        icon: const Icon(Icons.science_outlined, size: 18),
-                        label: const Text('Explore with sample users (prototype)'),
+                        icon: const Icon(Icons.play_circle_outline, size: 18),
+                        label: const Text('Try the demo'),
                       ),
                     ),
                   ],
@@ -99,38 +84,6 @@ class _LogoMark extends StatelessWidget {
         const SizedBox(width: 12),
         Text('Roomeez', style: context.text.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
       ],
-    );
-  }
-}
-
-class _Point extends StatelessWidget {
-  const _Point({required this.icon, required this.title, required this.body});
-
-  final IconData icon;
-  final String title;
-  final String body;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: context.colors.primary),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: context.text.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
-                const SizedBox(height: 2),
-                Text(body, style: context.text.bodyMedium?.copyWith(color: context.appColors.muted)),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

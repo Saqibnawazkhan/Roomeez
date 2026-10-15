@@ -63,15 +63,7 @@ class MembersTab extends ConsumerWidget {
               ],
             ),
           ),
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Text(
-              'Balance = contributions + expenses paid personally − share of expenses (all time). '
-              'Positive means the group owes them.',
-              style: context.text.bodySmall?.copyWith(color: context.appColors.muted),
-            ),
-          ),
+
           if (s.formerMembers.isNotEmpty) ...[
             SectionHeader('Former members (${s.formerMembers.length})'),
             Card(
@@ -83,14 +75,6 @@ class MembersTab extends ConsumerWidget {
                     _MemberTile(member: m, snapshot: s, balance: summary.balanceOf(m.userId)),
                   ],
                 ],
-              ),
-            ),
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Text(
-                'Former members no longer have access, but the expenses they added remain in the group\'s records.',
-                style: context.text.bodySmall?.copyWith(color: context.appColors.muted),
               ),
             ),
           ],
@@ -119,7 +103,7 @@ class _JoinRequestCardState extends ConsumerState<_JoinRequestCard> {
       final ok = await showConfirmDialog(
         context,
         title: 'Decline ${r.name}?',
-        message: '${r.name} won\'t be added to the group. They can send a new request later.',
+        message: 'They won\'t be added to the group.',
         confirmLabel: 'Decline',
       );
       if (!ok || !mounted) return;
@@ -166,12 +150,7 @@ class _JoinRequestCardState extends ConsumerState<_JoinRequestCard> {
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            'If approved, they share expenses from today onward.',
-            style: context.text.bodySmall?.copyWith(color: context.appColors.muted),
-          ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           if (_busy)
             const Center(
               child: Padding(padding: EdgeInsets.all(8), child: CircularProgressIndicator()),
@@ -273,10 +252,7 @@ class _MemberSheetState extends ConsumerState<_MemberSheet> {
     final ok = await showConfirmDialog(
       context,
       title: 'Remove ${m.displayName}?',
-      message:
-          '${m.displayName} will lose access to this group from today and won\'t share future expenses.\n\n'
-          'Their past expenses stay in the group records, unchanged and visible to everyone. '
-          'No expenses are erased.',
+      message: 'They\'ll lose access to this group. Their past expenses stay.',
       confirmLabel: 'Remove member',
       destructive: true,
     );
@@ -288,7 +264,7 @@ class _MemberSheetState extends ConsumerState<_MemberSheet> {
           .removeMember(actorUserId: widget.snapshot.viewerUserId, groupId: widget.snapshot.group.id, memberId: m.id);
       if (!mounted) return;
       Navigator.of(context).pop();
-      showAppSnack(context, '${m.displayName} was removed. Their records are kept.');
+      showAppSnack(context, '${m.displayName} removed');
     } catch (error) {
       if (mounted) {
         setState(() => _busy = false);

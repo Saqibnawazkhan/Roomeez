@@ -84,12 +84,6 @@ class _ReportPreviewScreenState extends ConsumerState<ReportPreviewScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'The PDF is created on this phone. Roomeez doesn\'t upload or send it anywhere.',
-                    textAlign: TextAlign.center,
-                    style: context.text.bodySmall?.copyWith(color: context.appColors.muted),
-                  ),
                 ],
               ),
             ),

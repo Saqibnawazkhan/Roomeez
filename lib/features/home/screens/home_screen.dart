@@ -40,11 +40,6 @@ class HomeScreen extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
           children: [
             Text('Hi, $firstName', style: context.text.headlineSmall?.copyWith(fontWeight: FontWeight.w800)),
-            const SizedBox(height: 4),
-            Text(
-              'Create a group for your flat or hostel room, or join one with a code.',
-              style: context.text.bodyMedium?.copyWith(color: context.appColors.muted),
-            ),
             const SizedBox(height: 16),
             Row(
               children: [
@@ -52,7 +47,7 @@ class HomeScreen extends ConsumerWidget {
                   child: _ActionCard(
                     icon: Icons.add_home_work_outlined,
                     title: 'Create group',
-                    subtitle: 'Start a new shared record',
+                    subtitle: 'For your flat or room',
                     primary: true,
                     onTap: () => context.push(Routes.createGroup),
                   ),
@@ -62,7 +57,7 @@ class HomeScreen extends ConsumerWidget {
                   child: _ActionCard(
                     icon: Icons.group_add_outlined,
                     title: 'Join group',
-                    subtitle: 'Use a group code',
+                    subtitle: 'With a group code',
                     onTap: () => context.push(Routes.joinGroup),
                   ),
                 ),
@@ -106,7 +101,7 @@ class HomeScreen extends ConsumerWidget {
                       child: EmptyState(
                         icon: Icons.groups_2_outlined,
                         title: 'No groups yet',
-                        message: 'Create a group for your shared place, or ask a flatmate for their group code.',
+                        message: 'Create one or join with a code.',
                       ),
                     )
                   : Column(
@@ -118,12 +113,6 @@ class HomeScreen extends ConsumerWidget {
                           ),
                       ],
                     ),
-            ),
-            const SizedBox(height: 16),
-            const InfoBanner(
-              tone: BannerTone.prototype,
-              message:
-                  'Prototype with sample data. Changes are kept only until the app restarts; nothing is sent to a server.',
             ),
           ],
         ),
@@ -229,9 +218,7 @@ class _GroupCard extends ConsumerWidget {
                       style: context.text.titleMedium?.copyWith(fontWeight: FontWeight.w700),
                     ),
                     Text(
-                      snapshot == null
-                          ? 'Code ${group.code}'
-                          : '${snapshot.activeMembers.length} members  ·  Code ${group.code}',
+                      snapshot == null ? 'Code ${group.code}' : '${snapshot.activeMembers.length} members',
                       style: context.text.bodySmall?.copyWith(color: context.appColors.muted),
                     ),
                   ],
@@ -247,7 +234,7 @@ class _GroupCard extends ConsumerWidget {
             Row(
               children: [
                 Expanded(
-                  child: LabeledValue(label: 'Spent this month', value: AmountText(summary.totalExpensesPaisa)),
+                  child: LabeledValue(label: 'This month', value: AmountText(summary.totalExpensesPaisa)),
                 ),
                 Expanded(
                   child: LabeledValue(

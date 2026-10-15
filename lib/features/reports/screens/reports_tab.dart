@@ -68,13 +68,6 @@ class _ReportsTabState extends State<ReportsTab> {
       body: ListView(
         padding: const EdgeInsets.only(bottom: 32),
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-            child: Text(
-              'Create a report for any period to review or share with the group.',
-              style: context.text.bodyMedium?.copyWith(color: context.appColors.muted),
-            ),
-          ),
           PeriodSelector(value: _period, presets: _presets, onChanged: (p) => setState(() => _period = p)),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
@@ -94,26 +87,15 @@ class _ReportsTabState extends State<ReportsTab> {
                 ),
                 const SizedBox(height: 16),
                 AppCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Row(
                     children: [
-                      Text('Report period', style: context.text.labelLarge?.copyWith(color: context.appColors.muted)),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${AppDates.range(range)}  (${range.dayCount} days)',
-                        style: context.text.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                      Expanded(
+                        child: Text(
+                          '${range.dayCount} days · ${summary.expenseCount} expenses',
+                          style: TextStyle(color: context.appColors.muted),
+                        ),
                       ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: LabeledValue(label: 'Expenses', value: Text('${summary.expenseCount}')),
-                          ),
-                          Expanded(
-                            child: LabeledValue(label: 'Total', value: AmountText(summary.totalExpensesPaisa)),
-                          ),
-                        ],
-                      ),
+                      AmountText(summary.totalExpensesPaisa, style: const TextStyle(fontWeight: FontWeight.w800)),
                     ],
                   ),
                 ),
@@ -122,18 +104,6 @@ class _ReportsTabState extends State<ReportsTab> {
                   label: 'Generate report',
                   icon: Icons.description_outlined,
                   onPressed: () => context.push(Routes.report(s.group.id, range)),
-                ),
-                const SectionHeader('What\'s included'),
-                AppCard(
-                  child: Column(
-                    children: const [
-                      _Included(Icons.today_outlined, 'Daily expense list with items, quantities and prices'),
-                      _Included(Icons.person_outline, 'Who added and who paid for each expense'),
-                      _Included(Icons.savings_outlined, 'Group fund contributions, kept separate from expenses'),
-                      _Included(Icons.groups_outlined, 'Members, their joining dates and balances for the period'),
-                      _Included(Icons.functions, 'Summary totals'),
-                    ],
-                  ),
                 ),
               ],
             ),
@@ -159,27 +129,6 @@ class _DateField extends StatelessWidget {
       child: InputDecorator(
         decoration: InputDecoration(labelText: label, isDense: true, suffixIcon: const Icon(Icons.event, size: 20)),
         child: Text(AppDates.day(date), maxLines: 1, overflow: TextOverflow.ellipsis),
-      ),
-    );
-  }
-}
-
-class _Included extends StatelessWidget {
-  const _Included(this.icon, this.text);
-
-  final IconData icon;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        children: [
-          Icon(icon, size: 20, color: context.colors.primary),
-          const SizedBox(width: 12),
-          Expanded(child: Text(text)),
-        ],
       ),
     );
   }

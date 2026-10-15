@@ -31,7 +31,7 @@ class ExpenseDetailScreen extends ConsumerWidget {
       await ref
           .read(expenseRepositoryProvider)
           .voidExpense(actorUserId: s.viewerUserId, expenseId: e.id, reason: reason);
-      if (context.mounted) showAppSnack(context, 'Expense voided. It stays in the history.');
+      if (context.mounted) showAppSnack(context, 'Expense voided');
     } catch (error) {
       if (context.mounted) showAppSnack(context, describeError(error), isError: true);
     }
@@ -72,7 +72,6 @@ class ExpenseDetailScreen extends ConsumerWidget {
                         contentPadding: EdgeInsets.zero,
                         leading: Icon(Icons.block),
                         title: Text('Void expense'),
-                        subtitle: Text('Keep it visible, exclude from totals'),
                       ),
                     ),
                   ],
@@ -99,6 +98,7 @@ class ExpenseDetailScreen extends ConsumerWidget {
     final creator = s.nameOf(e.createdByUserId);
     final creatorActive = s.activeMembershipOf(e.createdByUserId) != null;
     final shares = BalanceCalculator.shares(e);
+    final labelStyle = TextStyle(color: muted, fontSize: 12.5);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
@@ -109,7 +109,7 @@ class ExpenseDetailScreen extends ConsumerWidget {
             children: [
               Row(
                 children: [
-                  CategoryIcon(e.category, size: 48, muted: e.isVoided),
+                  CategoryIcon(e.category, size: 44, muted: e.isVoided),
                   const SizedBox(width: 14),
                   Expanded(
                     child: Column(
@@ -118,12 +118,12 @@ class ExpenseDetailScreen extends ConsumerWidget {
                         Text(
                           e.title,
                           style: context.text.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w700,
                             decoration: e.isVoided ? TextDecoration.lineThrough : null,
                           ),
                         ),
                         Text(
-                          '${e.category.label}  ·  ${AppDates.day(e.date)}',
+                          '${e.category.label} · ${AppDates.day(e.date)}',
                           style: context.text.bodyMedium?.copyWith(color: muted),
                         ),
                       ],
@@ -131,24 +131,20 @@ class ExpenseDetailScreen extends ConsumerWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              AmountText(
-                e.totalPaisa,
-                strikethrough: e.isVoided,
-                style: context.text.headlineMedium?.copyWith(fontWeight: FontWeight.w800),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
+              const SizedBox(height: 14),
+              Row(
                 children: [
-                  Pill(
-                    e.paymentSource.label,
-                    color: e.paymentSource == PaymentSource.groupFund ? context.appColors.fund : muted,
+                  Expanded(
+                    child: AmountText(
+                      e.totalPaisa,
+                      strikethrough: e.isVoided,
+                      style: context.text.headlineMedium?.copyWith(fontWeight: FontWeight.w800),
+                    ),
                   ),
-                  if (e.isEdited)
-                    Pill('Edited ${AppDates.dateTime(e.editedAt!)}', color: context.colors.tertiary, icon: Icons.edit),
-                  if (e.isVoided) Pill('Voided', color: context.colors.error, icon: Icons.block),
+                  if (e.isVoided)
+                    Pill('Voided', color: context.colors.error)
+                  else if (e.isEdited)
+                    Pill('Edited', color: context.colors.tertiary),
                 ],
               ),
             ],
@@ -159,65 +155,48 @@ class ExpenseDetailScreen extends ConsumerWidget {
           InfoBanner(
             tone: BannerTone.warning,
             icon: Icons.block,
-            message:
-                'Voided by $creator on ${AppDates.dateTime(e.voidedAt!)}. '
-                'Reason: ${e.voidReason}. It is not counted in totals, balances or reports.',
+            message: 'Voided: ${e.voidReason}. Not counted in totals.',
+          ),
+        ] else if (!canEdit) ...[
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Icon(Icons.lock_outline, size: 16, color: muted),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  creatorActive
+                      ? 'Only $creator can edit this expense.'
+                      : '$creator has left, so this can\'t be edited.',
+                  style: context.text.bodySmall?.copyWith(color: muted),
+                ),
+              ),
+            ],
           ),
         ],
-        const SizedBox(height: 12),
-        if (canEdit)
-          InfoBanner(
-            icon: Icons.verified_user_outlined,
-            message:
-                'You added this expense, so only you can edit or void it. '
-                'If you spot a mistake, edit it rather than adding it again.',
-          )
-        else if (!e.isVoided)
-          InfoBanner(
-            icon: Icons.lock_outline,
-            message: creatorActive
-                ? 'Only $creator, who added this expense, can edit it. '
-                      'If something looks wrong, ask ${creator.split(' ').first} to correct it.'
-                : '$creator is no longer a member, so this record can\'t be changed. It stays in the group history.',
-          ),
-        const SectionHeader('Items'),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-            child: Column(
-              children: [
-                if (e.isItemized) ...[
+        if (e.isItemized) ...[
+          const SectionHeader('Items'),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              child: Column(
+                children: [
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 6),
                     child: Row(
                       children: [
-                        Expanded(
-                          flex: 5,
-                          child: Text('Item', style: TextStyle(color: muted, fontSize: 12.5)),
-                        ),
+                        Expanded(flex: 5, child: Text('Item', style: labelStyle)),
                         Expanded(
                           flex: 2,
-                          child: Text(
-                            'Qty',
-                            textAlign: TextAlign.right,
-                            style: TextStyle(color: muted, fontSize: 12.5),
-                          ),
+                          child: Text('Qty', textAlign: TextAlign.right, style: labelStyle),
                         ),
                         Expanded(
                           flex: 3,
-                          child: Text(
-                            'Price',
-                            textAlign: TextAlign.right,
-                            style: TextStyle(color: muted, fontSize: 12.5),
-                          ),
+                          child: Text('Price', textAlign: TextAlign.right, style: labelStyle),
                         ),
                         Expanded(
                           flex: 3,
-                          child: Text(
-                            'Total',
-                            textAlign: TextAlign.right,
-                            style: TextStyle(color: muted, fontSize: 12.5),
-                          ),
+                          child: Text('Total', textAlign: TextAlign.right, style: labelStyle),
                         ),
                       ],
                     ),
@@ -229,10 +208,7 @@ class ExpenseDetailScreen extends ConsumerWidget {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            flex: 5,
-                            child: Text(item.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-                          ),
+                          Expanded(flex: 5, child: Text(item.name)),
                           Expanded(
                             flex: 2,
                             child: Text(Quantity.format(item.quantityMilli), textAlign: TextAlign.right),
@@ -248,27 +224,11 @@ class ExpenseDetailScreen extends ConsumerWidget {
                         ],
                       ),
                     ),
-                  const Divider(),
-                ] else
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Text('Recorded as a single amount (no item breakdown).', style: TextStyle(color: muted)),
-                  ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 6),
-                  child: Row(
-                    children: [
-                      const Expanded(
-                        child: Text('Total', style: TextStyle(fontWeight: FontWeight.w800)),
-                      ),
-                      AmountText(e.totalPaisa, style: const TextStyle(fontWeight: FontWeight.w800)),
-                    ],
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-        ),
+        ],
         const SectionHeader('Details'),
         AppCard(
           child: Column(
@@ -279,13 +239,12 @@ class ExpenseDetailScreen extends ConsumerWidget {
                 'Paid by',
                 e.paymentSource == PaymentSource.groupFund ? 'Group fund' : s.nameOf(e.paidByUserId),
               ),
-              _row(context, 'Date', AppDates.day(e.date)),
-              _row(context, 'Recorded', AppDates.dateTime(e.createdAt)),
               if (e.isEdited) _row(context, 'Last edited', AppDates.dateTime(e.editedAt!)),
+              if (e.notes != null) _row(context, 'Note', e.notes!),
             ],
           ),
         ),
-        SectionHeader('Shared equally between ${shares.length}'),
+        SectionHeader('Split between ${shares.length}'),
         AppCard(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Column(
@@ -297,9 +256,7 @@ class ExpenseDetailScreen extends ConsumerWidget {
                     children: [
                       MemberAvatar(name: s.nameOf(entry.key), size: 30),
                       const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(entry.key == s.viewerUserId ? '${s.nameOf(entry.key)} (you)' : s.nameOf(entry.key)),
-                      ),
+                      Expanded(child: Text(entry.key == s.viewerUserId ? 'You' : s.nameOf(entry.key))),
                       AmountText(entry.value, style: const TextStyle(fontWeight: FontWeight.w600)),
                     ],
                   ),
@@ -307,10 +264,6 @@ class ExpenseDetailScreen extends ConsumerWidget {
             ],
           ),
         ),
-        if (e.notes != null) ...[
-          const SectionHeader('Notes'),
-          AppCard(child: Text(e.notes!, style: context.text.bodyMedium)),
-        ],
       ],
     );
   }
@@ -362,11 +315,7 @@ class _VoidDialogState extends State<_VoidDialog> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Use this for duplicates or entries that should never have been recorded. '
-            'The expense stays visible to everyone, marked as voided, and is left out of totals. '
-            'This can\'t be undone.',
-          ),
+          const Text('It stays visible but won\'t count in totals. This can\'t be undone.'),
           const SizedBox(height: 14),
           TextField(
             controller: _reason,

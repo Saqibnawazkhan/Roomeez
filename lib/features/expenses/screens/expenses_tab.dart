@@ -28,7 +28,6 @@ class _ExpensesTabState extends State<ExpensesTab> {
   PeriodFilter _period = const PeriodFilter(PeriodPreset.allTime);
   ExpenseCategory? _category;
   String? _memberUserId;
-  bool _showVoided = true;
 
   @override
   void dispose() {
@@ -42,7 +41,7 @@ class _ExpensesTabState extends State<ExpensesTab> {
     if (_memberUserId != null && e.createdByUserId != _memberUserId && e.paidByUserId != _memberUserId) {
       return false;
     }
-    if (!_showVoided && e.isVoided) return false;
+
     final query = _search.text.trim().toLowerCase();
     if (query.isEmpty) return true;
     return e.title.toLowerCase().contains(query) ||
@@ -122,7 +121,7 @@ class _ExpensesTabState extends State<ExpensesTab> {
     for (final e in filtered) {
       days.putIfAbsent(dateOnly(e.date), () => []).add(e);
     }
-    final hasFilters = _category != null || _memberUserId != null || _search.text.isNotEmpty || !_showVoided;
+    final hasFilters = _category != null || _memberUserId != null || _search.text.isNotEmpty;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Expenses')),
@@ -144,7 +143,7 @@ class _ExpensesTabState extends State<ExpensesTab> {
               onChanged: (_) => setState(() {}),
               textInputAction: TextInputAction.search,
               decoration: InputDecoration(
-                hintText: 'Search by title or item',
+                hintText: 'Search',
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: _search.text.isEmpty
                     ? null
@@ -174,19 +173,14 @@ class _ExpensesTabState extends State<ExpensesTab> {
                   active: _memberUserId != null,
                   onTap: _pickMember,
                 ),
-                const SizedBox(width: 8),
-                FilterChip(
-                  label: const Text('Show voided'),
-                  selected: _showVoided,
-                  onSelected: (v) => setState(() => _showVoided = v),
-                ),
+
                 if (hasFilters) ...[
                   const SizedBox(width: 8),
                   TextButton(
                     onPressed: () => setState(() {
                       _category = null;
                       _memberUserId = null;
-                      _showVoided = true;
+
                       _search.clear();
                     }),
                     child: const Text('Reset'),
@@ -198,8 +192,7 @@ class _ExpensesTabState extends State<ExpensesTab> {
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
             child: Text(
-              '${filtered.length} ${filtered.length == 1 ? 'expense' : 'expenses'}  ·  ${Money.format(countedTotal)}'
-              '${filtered.any((e) => e.isVoided) ? ' (voided not counted)' : ''}',
+              '${filtered.length} ${filtered.length == 1 ? 'expense' : 'expenses'} · ${Money.format(countedTotal)}',
               style: context.text.bodySmall?.copyWith(color: context.appColors.muted),
             ),
           ),

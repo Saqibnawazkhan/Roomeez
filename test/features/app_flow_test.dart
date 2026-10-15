@@ -61,7 +61,7 @@ void main() {
       expect(find.text('Electricity bill (LESCO)'), findsOneWidget);
       expect(find.text('Edit expense'), findsNothing);
       expect(find.byTooltip('More'), findsNothing);
-      expect(find.textContaining('Only Hamza Khan, who added this expense, can edit it.'), findsOneWidget);
+      expect(find.text('Only Hamza Khan can edit this expense.'), findsOneWidget);
     }
   });
 
@@ -74,7 +74,7 @@ void main() {
   testWidgets('adding an itemized expense recalculates totals and saves it', (tester) async {
     final store = await pumpApp(tester, signedInAs: 'u_ali', location: Routes.addExpense('g_apartment'));
 
-    await tester.enterText(find.widgetWithText(TextFormField, 'Title or short description'), 'Fruit chaat');
+    await tester.enterText(find.widgetWithText(TextFormField, 'Title'), 'Fruit chaat');
     await tester.enterText(find.widgetWithText(TextFormField, 'Item name'), 'Bananas');
     await tester.enterText(find.widgetWithText(TextFormField, 'Qty'), '2');
     await tester.enterText(find.widgetWithText(TextFormField, 'Price each'), '150');

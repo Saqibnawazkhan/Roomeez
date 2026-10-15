@@ -62,7 +62,7 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
           );
       if (!mounted) return;
       context.pop();
-      showAppSnack(context, '${member.displayName} added. They can sign up with this number to see the group.');
+      showAppSnack(context, '${member.displayName} added');
     } catch (error) {
       if (mounted) showAppSnack(context, describeError(error), isError: true);
     } finally {
@@ -103,22 +103,13 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
               borderRadius: BorderRadius.circular(12),
               onTap: _pickDate,
               child: InputDecorator(
-                decoration: const InputDecoration(
-                  labelText: 'Membership start date',
-                  prefixIcon: Icon(Icons.event_outlined),
-                ),
+                decoration: const InputDecoration(labelText: 'Joining date', prefixIcon: Icon(Icons.event_outlined)),
                 child: Text(AppDates.day(_startDate)),
               ),
             ),
             const SizedBox(height: 16),
-            InfoBanner(
-              message:
-                  'They\'ll share expenses dated from ${AppDates.day(_startDate)} onward. '
-                  'Expenses from before that date aren\'t assigned to them.',
-            ),
-            const SizedBox(height: 8),
             Text(
-              'If they don\'t have Roomeez yet, they\'ll see this group as soon as they sign up with this number.',
+              'They share expenses from this date onward.',
               style: context.text.bodySmall?.copyWith(color: context.appColors.muted),
             ),
           ],

@@ -23,14 +23,9 @@ Future<void> showSampleUserSheet(BuildContext context, WidgetRef ref) {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Sample users', style: context.text.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
-            const SizedBox(height: 8),
-            const InfoBanner(
-              tone: BannerTone.prototype,
-              message:
-                  'Prototype feature. Switch accounts to see what each member can do. '
-                  'Data is sample data kept on this device only and resets when the app restarts.',
-            ),
+            Text('Choose a demo user', style: context.text.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+            const SizedBox(height: 4),
+            Text('Sample data resets when the app restarts.', style: TextStyle(color: context.appColors.muted)),
             const SizedBox(height: 8),
             for (final user in tools.sampleUsers)
               ListTile(

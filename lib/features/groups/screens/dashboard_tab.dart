@@ -5,14 +5,11 @@ import 'package:go_router/go_router.dart';
 import '../../../app/routes.dart';
 import '../../../app/theme/app_theme.dart';
 import '../../../core/utils/dates.dart';
-import '../../../core/utils/money.dart';
-import '../../../core/widgets/category_icon.dart';
 import '../../../core/widgets/common.dart';
 import '../../../core/widgets/period_selector.dart';
 import '../../../data/models/group_snapshot.dart';
 import '../../../data/services/balance_calculator.dart';
 import '../../../data/services/permission_policy.dart';
-import '../../contributions/widgets/fund_card.dart';
 import '../../expenses/widgets/expense_tile.dart';
 import '../group_providers.dart';
 
@@ -44,7 +41,8 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
       expenses: s.expenses,
       contributions: s.contributions,
     );
-    final mine = allTime.balanceOf(s.viewerUserId);
+    final fund = BalanceCalculator.fundStatus(expenses: s.expenses, contributions: s.contributions);
+    final myNet = allTime.balanceOf(s.viewerUserId)?.netPaisa ?? 0;
     final recent = s.expenses.where((e) => range == null || range.contains(e.date)).take(5).toList();
     final pending = ref.watch(pendingJoinRequestsProvider(s.group.id)).value ?? const [];
 
@@ -55,7 +53,7 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
           children: [
             Text(s.group.name, maxLines: 1, overflow: TextOverflow.ellipsis),
             Text(
-              'Code ${s.group.code}  ·  ${s.activeMembers.length} members',
+              '${s.activeMembers.length} members',
               style: context.text.bodySmall?.copyWith(color: context.appColors.muted),
             ),
           ],
@@ -87,46 +85,57 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 if (pending.isNotEmpty) ...[
-                  InfoBanner(
-                    icon: Icons.person_add_alt_1_outlined,
-                    message: pending.length == 1
-                        ? '${pending.first.name} wants to join this group.'
-                        : '${pending.length} people want to join this group.',
-                    action: TextButton(
-                      style: TextButton.styleFrom(padding: EdgeInsets.zero, visualDensity: VisualDensity.compact),
-                      onPressed: () => widget.onOpenTab(GroupTab.members),
-                      child: const Text('Review requests'),
+                  AppCard(
+                    padding: const EdgeInsets.fromLTRB(16, 6, 6, 6),
+                    onTap: () => widget.onOpenTab(GroupTab.members),
+                    child: Row(
+                      children: [
+                        Icon(Icons.person_add_alt_1_outlined, color: context.colors.primary, size: 20),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            pending.length == 1
+                                ? '${pending.first.name} wants to join'
+                                : '${pending.length} people want to join',
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                        TextButton(onPressed: () => widget.onOpenTab(GroupTab.members), child: const Text('Review')),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 12),
                 ],
-                _TotalCard(summary: summary, period: _period),
+                _TotalCard(summary: summary),
                 const SizedBox(height: 12),
-                FundCard(snapshot: s),
-                const SizedBox(height: 12),
-                if (mine != null) _MyBalanceCard(net: mine.netPaisa, onTap: () => widget.onOpenTab(GroupTab.members)),
-                if (summary.byCategory.isNotEmpty) ...[
-                  const SectionHeader('By category'),
-                  AppCard(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    child: Column(
-                      children: [
-                        for (final entry in summary.byCategory.take(4))
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 6),
-                            child: Row(
-                              children: [
-                                CategoryIcon(entry.key, size: 32),
-                                const SizedBox(width: 12),
-                                Expanded(child: Text(entry.key.label)),
-                                AmountText(entry.value, style: const TextStyle(fontWeight: FontWeight.w600)),
-                              ],
-                            ),
-                          ),
-                      ],
-                    ),
+                IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        child: _StatCard(
+                          label: 'Group fund left',
+                          icon: Icons.savings_outlined,
+                          color: context.appColors.fund,
+                          value: fund.hasFund
+                              ? AmountText(fund.remainingPaisa)
+                              : Text('None', style: TextStyle(color: context.appColors.muted)),
+                          onTap: () => context.push(Routes.groupSettings(s.group.id)),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _StatCard(
+                          label: 'Your balance',
+                          icon: Icons.account_balance_wallet_outlined,
+                          color: context.colors.primary,
+                          value: AmountText(myNet, signed: true, colorize: true),
+                          onTap: () => widget.onOpenTab(GroupTab.members),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
                 SectionHeader(
                   'Recent expenses',
                   trailing: TextButton(
@@ -142,11 +151,7 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
             child: Card(
               clipBehavior: Clip.antiAlias,
               child: recent.isEmpty
-                  ? const EmptyState(
-                      icon: Icons.receipt_long_outlined,
-                      title: 'No expenses in this period',
-                      message: 'Tap "Add expense" to record the first one.',
-                    )
+                  ? const EmptyState(icon: Icons.receipt_long_outlined, title: 'No expenses yet')
                   : Column(
                       children: [
                         for (final (i, e) in recent.indexed) ...[
@@ -157,41 +162,6 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
                     ),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: SectionHeader(
-              'Members',
-              trailing: TextButton(onPressed: () => widget.onOpenTab(GroupTab.members), child: const Text('View all')),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: AppCard(
-              onTap: () => widget.onOpenTab(GroupTab.members),
-              child: Wrap(
-                spacing: 14,
-                runSpacing: 12,
-                children: [
-                  for (final m in s.activeMembers)
-                    SizedBox(
-                      width: 64,
-                      child: Column(
-                        children: [
-                          MemberAvatar(name: m.displayName, size: 44),
-                          const SizedBox(height: 4),
-                          Text(
-                            m.userId == s.viewerUserId ? 'You' : m.displayName.split(' ').first,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: context.text.labelSmall,
-                          ),
-                        ],
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
         ],
       ),
     );
@@ -199,24 +169,23 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
 }
 
 class _TotalCard extends StatelessWidget {
-  const _TotalCard({required this.summary, required this.period});
+  const _TotalCard({required this.summary});
 
   final FinancialSummary summary;
-  final PeriodFilter period;
 
   @override
   Widget build(BuildContext context) {
     final onPrimary = context.colors.onPrimary;
-    final soft = onPrimary.withValues(alpha: 0.78);
+    final soft = onPrimary.withValues(alpha: 0.8);
     return Card(
       color: context.colors.primary,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       child: Padding(
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Total expenses', style: context.text.labelLarge?.copyWith(color: soft)),
+            Text('Total spent', style: context.text.labelLarge?.copyWith(color: soft)),
             const SizedBox(height: 4),
             FittedBox(
               fit: BoxFit.scaleDown,
@@ -228,81 +197,62 @@ class _TotalCard extends StatelessWidget {
             ),
             const SizedBox(height: 2),
             Text(
-              '${summary.expenseCount} ${summary.expenseCount == 1 ? 'expense' : 'expenses'}  ·  ${period.describe()}',
+              '${summary.expenseCount} ${summary.expenseCount == 1 ? 'expense' : 'expenses'}',
               style: context.text.bodySmall?.copyWith(color: soft),
-            ),
-            const SizedBox(height: 14),
-            Divider(color: onPrimary.withValues(alpha: 0.2)),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(child: _split(context, 'Paid personally', summary.paidPersonallyPaisa)),
-                Expanded(child: _split(context, 'Paid from group fund', summary.paidFromFundPaisa)),
-              ],
             ),
           ],
         ),
       ),
     );
   }
-
-  Widget _split(BuildContext context, String label, int paisa) {
-    final onPrimary = context.colors.onPrimary;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: context.text.labelSmall?.copyWith(color: onPrimary.withValues(alpha: 0.78))),
-        const SizedBox(height: 2),
-        AmountText(
-          paisa,
-          style: context.text.titleSmall?.copyWith(color: onPrimary, fontWeight: FontWeight.w700),
-        ),
-      ],
-    );
-  }
 }
 
-class _MyBalanceCard extends StatelessWidget {
-  const _MyBalanceCard({required this.net, required this.onTap});
+class _StatCard extends StatelessWidget {
+  const _StatCard({
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.value,
+    required this.onTap,
+  });
 
-  final int net;
+  final String label;
+  final IconData icon;
+  final Color color;
+  final Widget value;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final String message;
-    if (net > 0) {
-      message = 'You\'ve put in ${Money.format(net)} more than your share.';
-    } else if (net < 0) {
-      message = 'Your share is ${Money.format(-net)} more than what you\'ve put in.';
-    } else {
-      message = 'You\'re all square with the group.';
-    }
     return AppCard(
       onTap: onTap,
-      child: Row(
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Your balance (all time)',
-                  style: context.text.labelLarge?.copyWith(color: context.appColors.muted),
+          Row(
+            children: [
+              Icon(icon, size: 18, color: color),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.text.labelMedium?.copyWith(color: context.appColors.muted),
                 ),
-                const SizedBox(height: 2),
-                AmountText(
-                  net,
-                  signed: true,
-                  colorize: true,
-                  style: context.text.titleLarge?.copyWith(fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: 2),
-                Text(message, style: context.text.bodySmall?.copyWith(color: context.appColors.muted)),
-              ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: DefaultTextStyle.merge(
+              style: context.text.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+              child: value,
             ),
           ),
-          const Icon(Icons.chevron_right),
         ],
       ),
     );

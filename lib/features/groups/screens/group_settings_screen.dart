@@ -54,10 +54,8 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
       context,
       title: 'Leave "${s.group.name}"?',
       message: [
-        'You will lose access to this group\'s records.',
-        'Expenses you added stay in the group history, and no one else can edit them.',
-        if (successor != null) 'The group manager role will pass to $successor.',
-        if (others.isEmpty) 'You are the last member, so the group will have no active members.',
+        'You\'ll lose access. Your past expenses stay in the group.',
+        if (successor != null) '$successor will become the manager.',
       ].join('\n\n'),
       confirmLabel: 'Leave group',
       destructive: true,
@@ -93,7 +91,6 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
         loading: () => const LoadingView(),
         error: (error, _) => _busy ? const LoadingView() : ErrorView(error: error),
         data: (s) {
-          final isManager = s.me?.isManager ?? false;
           return ListView(
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
             children: [
@@ -109,19 +106,11 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
                         style: context.text.bodyMedium?.copyWith(color: context.appColors.muted),
                       ),
                     ],
-                    const SizedBox(height: 14),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: LabeledValue(label: 'Created', value: Text(AppDates.day(s.group.createdAt))),
-                        ),
-                        Expanded(
-                          child: LabeledValue(label: 'Created by', value: Text(s.nameOf(s.group.createdByUserId))),
-                        ),
-                      ],
+                    const SizedBox(height: 8),
+                    Text(
+                      'Manager: ${s.manager?.displayName ?? 'None'}',
+                      style: context.text.bodySmall?.copyWith(color: context.appColors.muted),
                     ),
-                    const SizedBox(height: 12),
-                    LabeledValue(label: 'Group manager', value: Text(s.manager?.displayName ?? 'None')),
                   ],
                 ),
               ),
@@ -162,15 +151,6 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
                   ),
                 ),
               ],
-              const SectionHeader('Your role'),
-              InfoBanner(
-                icon: isManager ? Icons.admin_panel_settings_outlined : Icons.person_outline,
-                message: isManager
-                    ? 'You manage this group: you can remove members and change the join code. '
-                          'Like everyone else, you can only edit expenses you added yourself.'
-                    : 'You can add expenses, add members, approve join requests and create reports. '
-                          'You can edit only the expenses you added.',
-              ),
               const SizedBox(height: 28),
               OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(

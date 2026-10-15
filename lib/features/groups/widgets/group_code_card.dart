@@ -31,12 +31,7 @@ class GroupCodeCard extends StatelessWidget {
               color: context.colors.primary,
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            'People who join with this code need approval from a member.',
-            textAlign: TextAlign.center,
-            style: context.text.bodySmall?.copyWith(color: context.appColors.muted),
-          ),
+
           const SizedBox(height: 14),
           Row(
             children: [
