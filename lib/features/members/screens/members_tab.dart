@@ -1,0 +1,420 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../app/providers.dart';
+import '../../../app/routes.dart';
+import '../../../app/theme/app_theme.dart';
+import '../../../core/errors/app_exception.dart';
+import '../../../core/utils/dates.dart';
+import '../../../core/utils/phone.dart';
+import '../../../core/widgets/common.dart';
+import '../../../data/models/group_snapshot.dart';
+import '../../../data/models/models.dart';
+import '../../../data/services/balance_calculator.dart';
+import '../../../data/services/permission_policy.dart';
+import '../../groups/group_providers.dart';
+
+class MembersTab extends ConsumerWidget {
+  const MembersTab({super.key, required this.snapshot});
+
+  final GroupSnapshot snapshot;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = snapshot;
+    final pending = ref.watch(pendingJoinRequestsProvider(s.group.id)).value ?? const <JoinRequest>[];
+    final summary = BalanceCalculator.summarize(
+      members: s.members,
+      expenses: s.expenses,
+      contributions: s.contributions,
+    );
+    final canAdd = PermissionPolicy.canAddMember(s.me);
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Members')),
+      floatingActionButton: canAdd
+          ? FloatingActionButton.extended(
+              heroTag: 'members-add',
+              onPressed: () => context.push(Routes.addMember(s.group.id)),
+              icon: const Icon(Icons.person_add_alt_1_outlined),
+              label: const Text('Add member'),
+            )
+          : null,
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
+        children: [
+          if (pending.isNotEmpty) ...[
+            SectionHeader('Join requests (${pending.length})', padding: const EdgeInsets.fromLTRB(4, 4, 4, 8)),
+            for (final request in pending) ...[
+              _JoinRequestCard(request: request, snapshot: s),
+              const SizedBox(height: 8),
+            ],
+          ],
+          SectionHeader('Active members (${s.activeMembers.length})'),
+          Card(
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              children: [
+                for (final (i, m) in s.activeMembers.indexed) ...[
+                  if (i > 0) const Divider(indent: 72),
+                  _MemberTile(member: m, snapshot: s, balance: summary.balanceOf(m.userId)),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Text(
+              'Balance = contributions + expenses paid personally − share of expenses (all time). '
+              'Positive means the group owes them.',
+              style: context.text.bodySmall?.copyWith(color: context.appColors.muted),
+            ),
+          ),
+          if (s.formerMembers.isNotEmpty) ...[
+            SectionHeader('Former members (${s.formerMembers.length})'),
+            Card(
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                children: [
+                  for (final (i, m) in s.formerMembers.indexed) ...[
+                    if (i > 0) const Divider(indent: 72),
+                    _MemberTile(member: m, snapshot: s, balance: summary.balanceOf(m.userId)),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Text(
+                'Former members no longer have access, but the expenses they added remain in the group\'s records.',
+                style: context.text.bodySmall?.copyWith(color: context.appColors.muted),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _JoinRequestCard extends ConsumerStatefulWidget {
+  const _JoinRequestCard({required this.request, required this.snapshot});
+
+  final JoinRequest request;
+  final GroupSnapshot snapshot;
+
+  @override
+  ConsumerState<_JoinRequestCard> createState() => _JoinRequestCardState();
+}
+
+class _JoinRequestCardState extends ConsumerState<_JoinRequestCard> {
+  bool _busy = false;
+
+  Future<void> _decide(bool approve) async {
+    final r = widget.request;
+    if (!approve) {
+      final ok = await showConfirmDialog(
+        context,
+        title: 'Decline ${r.name}?',
+        message: '${r.name} won\'t be added to the group. They can send a new request later.',
+        confirmLabel: 'Decline',
+      );
+      if (!ok || !mounted) return;
+    }
+    setState(() => _busy = true);
+    final repo = ref.read(groupRepositoryProvider);
+    try {
+      if (approve) {
+        await repo.approveJoinRequest(actorUserId: widget.snapshot.viewerUserId, requestId: r.id);
+      } else {
+        await repo.declineJoinRequest(actorUserId: widget.snapshot.viewerUserId, requestId: r.id);
+      }
+      if (mounted) showAppSnack(context, approve ? '${r.name} joined the group' : 'Request declined');
+    } catch (error) {
+      if (mounted) {
+        setState(() => _busy = false);
+        showAppSnack(context, describeError(error), isError: true);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final r = widget.request;
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              MemberAvatar(name: r.name),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(r.name, style: const TextStyle(fontWeight: FontWeight.w700)),
+                    Text(
+                      '${PhoneNumber.format(r.phone)}  ·  ${AppDates.relativeDay(r.requestedAt)}',
+                      style: context.text.bodySmall?.copyWith(color: context.appColors.muted),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'If approved, they share expenses from today onward.',
+            style: context.text.bodySmall?.copyWith(color: context.appColors.muted),
+          ),
+          const SizedBox(height: 10),
+          if (_busy)
+            const Center(
+              child: Padding(padding: EdgeInsets.all(8), child: CircularProgressIndicator()),
+            )
+          else
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(minimumSize: const Size(64, 44)),
+                    onPressed: () => _decide(false),
+                    child: const Text('Decline'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: FilledButton(
+                    style: FilledButton.styleFrom(minimumSize: const Size(64, 44)),
+                    onPressed: () => _decide(true),
+                    child: const Text('Approve'),
+                  ),
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MemberTile extends ConsumerWidget {
+  const _MemberTile({required this.member, required this.snapshot, required this.balance});
+
+  final GroupMember member;
+  final GroupSnapshot snapshot;
+  final MemberBalance? balance;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final m = member;
+    final isMe = m.userId == snapshot.viewerUserId;
+    final period = m.isActive
+        ? 'Since ${AppDates.day(m.startDate)}'
+        : '${AppDates.short(m.startDate)} – ${AppDates.day(m.endDate ?? m.startDate)}  ·  ${m.status.label}';
+
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      onTap: () => _showDetails(context, ref),
+      leading: MemberAvatar(name: m.displayName, muted: !m.isActive),
+      title: Row(
+        children: [
+          Flexible(
+            child: Text(
+              m.displayName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+          if (isMe) ...[const SizedBox(width: 6), const Pill('You')],
+          if (m.isManager) ...[const SizedBox(width: 6), Pill('Manager', color: context.colors.tertiary)],
+        ],
+      ),
+      subtitle: Text(period),
+      trailing: AmountText(
+        balance?.netPaisa ?? 0,
+        signed: true,
+        colorize: true,
+        style: const TextStyle(fontWeight: FontWeight.w700),
+      ),
+    );
+  }
+
+  void _showDetails(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (sheet) => _MemberSheet(member: member, snapshot: snapshot, balance: balance),
+    );
+  }
+}
+
+class _MemberSheet extends ConsumerStatefulWidget {
+  const _MemberSheet({required this.member, required this.snapshot, required this.balance});
+
+  final GroupMember member;
+  final GroupSnapshot snapshot;
+  final MemberBalance? balance;
+
+  @override
+  ConsumerState<_MemberSheet> createState() => _MemberSheetState();
+}
+
+class _MemberSheetState extends ConsumerState<_MemberSheet> {
+  bool _busy = false;
+
+  Future<void> _remove() async {
+    final m = widget.member;
+    final ok = await showConfirmDialog(
+      context,
+      title: 'Remove ${m.displayName}?',
+      message:
+          '${m.displayName} will lose access to this group from today and won\'t share future expenses.\n\n'
+          'Their past expenses stay in the group records, unchanged and visible to everyone. '
+          'No expenses are erased.',
+      confirmLabel: 'Remove member',
+      destructive: true,
+    );
+    if (!ok || !mounted) return;
+    setState(() => _busy = true);
+    try {
+      await ref
+          .read(groupRepositoryProvider)
+          .removeMember(actorUserId: widget.snapshot.viewerUserId, groupId: widget.snapshot.group.id, memberId: m.id);
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      showAppSnack(context, '${m.displayName} was removed. Their records are kept.');
+    } catch (error) {
+      if (mounted) {
+        setState(() => _busy = false);
+        showAppSnack(context, describeError(error), isError: true);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final m = widget.member;
+    final s = widget.snapshot;
+    final b = widget.balance;
+    final canRemove = PermissionPolicy.canRemoveMember(actor: s.me, target: m);
+    final expensesAdded = s.expenses.where((e) => e.createdByUserId == m.userId).length;
+
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                MemberAvatar(name: m.displayName, size: 56, muted: !m.isActive),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(m.displayName, style: context.text.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
+                      Text(PhoneNumber.format(m.phone), style: TextStyle(color: context.appColors.muted)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            AppCard(
+              child: Column(
+                children: [
+                  _row(context, 'Status', m.isManager ? 'Active · Group manager' : m.status.label),
+                  _row(context, 'Member since', AppDates.day(m.startDate)),
+                  if (m.endDate != null) _row(context, 'Until', AppDates.day(m.endDate!)),
+                  if (m.addedByUserId != null && m.addedByUserId != m.userId)
+                    _row(context, 'Added by', s.nameOf(m.addedByUserId)),
+                  _row(context, 'Expenses added', '$expensesAdded'),
+                ],
+              ),
+            ),
+            if (b != null) ...[
+              const SectionHeader('Balance (all time)'),
+              AppCard(
+                child: Column(
+                  children: [
+                    _amountRow(context, 'Contributions to fund', b.contributedPaisa),
+                    _amountRow(context, 'Expenses paid personally', b.paidPersonallyPaisa),
+                    _amountRow(context, 'Share of expenses', -b.sharePaisa),
+                    const Divider(height: 18),
+                    Row(
+                      children: [
+                        const Expanded(
+                          child: Text('Balance', style: TextStyle(fontWeight: FontWeight.w800)),
+                        ),
+                        AmountText(
+                          b.netPaisa,
+                          signed: true,
+                          colorize: true,
+                          style: const TextStyle(fontWeight: FontWeight.w800),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            if (canRemove) ...[
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: context.colors.error,
+                    side: BorderSide(color: context.colors.error.withValues(alpha: 0.5)),
+                  ),
+                  onPressed: _busy ? null : _remove,
+                  icon: const Icon(Icons.person_remove_outlined),
+                  label: const Text('Remove member'),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _row(BuildContext context, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(label, style: TextStyle(color: context.appColors.muted)),
+          ),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
+        ],
+      ),
+    );
+  }
+
+  Widget _amountRow(BuildContext context, String label, int paisa) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(label, style: TextStyle(color: context.appColors.muted)),
+          ),
+          AmountText(
+            paisa,
+            signed: paisa < 0,
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
+    );
+  }
+}

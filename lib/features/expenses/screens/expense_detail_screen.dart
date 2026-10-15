@@ -1,0 +1,390 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../app/providers.dart';
+import '../../../app/routes.dart';
+import '../../../app/theme/app_theme.dart';
+import '../../../core/errors/app_exception.dart';
+import '../../../core/utils/dates.dart';
+import '../../../core/utils/quantity.dart';
+import '../../../core/widgets/category_icon.dart';
+import '../../../core/widgets/common.dart';
+import '../../../data/models/group_snapshot.dart';
+import '../../../data/models/models.dart';
+import '../../../data/services/balance_calculator.dart';
+import '../../../data/services/permission_policy.dart';
+import '../../groups/group_providers.dart';
+
+/// Everyone in the group can view an expense. Only its creator sees the
+/// Edit and Void controls. There is no way to erase an expense.
+class ExpenseDetailScreen extends ConsumerWidget {
+  const ExpenseDetailScreen({super.key, required this.groupId, required this.expenseId});
+
+  final String groupId;
+  final String expenseId;
+
+  Future<void> _void(BuildContext context, WidgetRef ref, GroupSnapshot s, Expense e) async {
+    final reason = await showDialog<String>(context: context, builder: (_) => const _VoidDialog());
+    if (reason == null || !context.mounted) return;
+    try {
+      await ref
+          .read(expenseRepositoryProvider)
+          .voidExpense(actorUserId: s.viewerUserId, expenseId: e.id, reason: reason);
+      if (context.mounted) showAppSnack(context, 'Expense voided. It stays in the history.');
+    } catch (error) {
+      if (context.mounted) showAppSnack(context, describeError(error), isError: true);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final snapshot = ref.watch(groupSnapshotProvider(groupId));
+    return snapshot.when(
+      loading: () => Scaffold(appBar: AppBar(), body: const LoadingView()),
+      error: (error, _) => Scaffold(
+        appBar: AppBar(),
+        body: ErrorView(error: error),
+      ),
+      data: (s) {
+        final e = s.expenseById(expenseId);
+        if (e == null) {
+          return Scaffold(
+            appBar: AppBar(),
+            body: const ErrorView(error: NotFoundException('This expense could not be found.')),
+          );
+        }
+        final canEdit = PermissionPolicy.canEditExpense(actor: s.me, expense: e);
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Expense details'),
+            actions: [
+              if (canEdit)
+                PopupMenuButton<String>(
+                  tooltip: 'More',
+                  onSelected: (value) {
+                    if (value == 'void') _void(context, ref, s, e);
+                  },
+                  itemBuilder: (_) => const [
+                    PopupMenuItem(
+                      value: 'void',
+                      child: ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: Icon(Icons.block),
+                        title: Text('Void expense'),
+                        subtitle: Text('Keep it visible, exclude from totals'),
+                      ),
+                    ),
+                  ],
+                ),
+            ],
+          ),
+          body: _body(context, s, e, canEdit),
+          bottomNavigationBar: canEdit
+              ? BottomActionBar(
+                  child: BusyButton(
+                    label: 'Edit expense',
+                    icon: Icons.edit_outlined,
+                    onPressed: () => context.push(Routes.editExpense(groupId, expenseId)),
+                  ),
+                )
+              : null,
+        );
+      },
+    );
+  }
+
+  Widget _body(BuildContext context, GroupSnapshot s, Expense e, bool canEdit) {
+    final muted = context.appColors.muted;
+    final creator = s.nameOf(e.createdByUserId);
+    final creatorActive = s.activeMembershipOf(e.createdByUserId) != null;
+    final shares = BalanceCalculator.shares(e);
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
+      children: [
+        AppCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  CategoryIcon(e.category, size: 48, muted: e.isVoided),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          e.title,
+                          style: context.text.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            decoration: e.isVoided ? TextDecoration.lineThrough : null,
+                          ),
+                        ),
+                        Text(
+                          '${e.category.label}  ·  ${AppDates.day(e.date)}',
+                          style: context.text.bodyMedium?.copyWith(color: muted),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              AmountText(
+                e.totalPaisa,
+                strikethrough: e.isVoided,
+                style: context.text.headlineMedium?.copyWith(fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  Pill(
+                    e.paymentSource.label,
+                    color: e.paymentSource == PaymentSource.groupFund ? context.appColors.fund : muted,
+                  ),
+                  if (e.isEdited)
+                    Pill('Edited ${AppDates.dateTime(e.editedAt!)}', color: context.colors.tertiary, icon: Icons.edit),
+                  if (e.isVoided) Pill('Voided', color: context.colors.error, icon: Icons.block),
+                ],
+              ),
+            ],
+          ),
+        ),
+        if (e.isVoided) ...[
+          const SizedBox(height: 12),
+          InfoBanner(
+            tone: BannerTone.warning,
+            icon: Icons.block,
+            message:
+                'Voided by $creator on ${AppDates.dateTime(e.voidedAt!)}. '
+                'Reason: ${e.voidReason}. It is not counted in totals, balances or reports.',
+          ),
+        ],
+        const SizedBox(height: 12),
+        if (canEdit)
+          InfoBanner(
+            icon: Icons.verified_user_outlined,
+            message:
+                'You added this expense, so only you can edit or void it. '
+                'If you spot a mistake, edit it rather than adding it again.',
+          )
+        else if (!e.isVoided)
+          InfoBanner(
+            icon: Icons.lock_outline,
+            message: creatorActive
+                ? 'Only $creator, who added this expense, can edit it. '
+                      'If something looks wrong, ask ${creator.split(' ').first} to correct it.'
+                : '$creator is no longer a member, so this record can\'t be changed. It stays in the group history.',
+          ),
+        const SectionHeader('Items'),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+            child: Column(
+              children: [
+                if (e.isItemized) ...[
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          flex: 5,
+                          child: Text('Item', style: TextStyle(color: muted, fontSize: 12.5)),
+                        ),
+                        Expanded(
+                          flex: 2,
+                          child: Text(
+                            'Qty',
+                            textAlign: TextAlign.right,
+                            style: TextStyle(color: muted, fontSize: 12.5),
+                          ),
+                        ),
+                        Expanded(
+                          flex: 3,
+                          child: Text(
+                            'Price',
+                            textAlign: TextAlign.right,
+                            style: TextStyle(color: muted, fontSize: 12.5),
+                          ),
+                        ),
+                        Expanded(
+                          flex: 3,
+                          child: Text(
+                            'Total',
+                            textAlign: TextAlign.right,
+                            style: TextStyle(color: muted, fontSize: 12.5),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Divider(),
+                  for (final item in e.items)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 7),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            flex: 5,
+                            child: Text(item.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                          ),
+                          Expanded(
+                            flex: 2,
+                            child: Text(Quantity.format(item.quantityMilli), textAlign: TextAlign.right),
+                          ),
+                          Expanded(
+                            flex: 3,
+                            child: AmountText(item.unitPricePaisa, withCurrency: false, textAlign: TextAlign.right),
+                          ),
+                          Expanded(
+                            flex: 3,
+                            child: AmountText(item.lineTotalPaisa, withCurrency: false, textAlign: TextAlign.right),
+                          ),
+                        ],
+                      ),
+                    ),
+                  const Divider(),
+                ] else
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Text('Recorded as a single amount (no item breakdown).', style: TextStyle(color: muted)),
+                  ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Row(
+                    children: [
+                      const Expanded(
+                        child: Text('Total', style: TextStyle(fontWeight: FontWeight.w800)),
+                      ),
+                      AmountText(e.totalPaisa, style: const TextStyle(fontWeight: FontWeight.w800)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SectionHeader('Details'),
+        AppCard(
+          child: Column(
+            children: [
+              _row(context, 'Added by', creator),
+              _row(
+                context,
+                'Paid by',
+                e.paymentSource == PaymentSource.groupFund ? 'Group fund' : s.nameOf(e.paidByUserId),
+              ),
+              _row(context, 'Date', AppDates.day(e.date)),
+              _row(context, 'Recorded', AppDates.dateTime(e.createdAt)),
+              if (e.isEdited) _row(context, 'Last edited', AppDates.dateTime(e.editedAt!)),
+            ],
+          ),
+        ),
+        SectionHeader('Shared equally between ${shares.length}'),
+        AppCard(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Column(
+            children: [
+              for (final entry in shares.entries)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Row(
+                    children: [
+                      MemberAvatar(name: s.nameOf(entry.key), size: 30),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(entry.key == s.viewerUserId ? '${s.nameOf(entry.key)} (you)' : s.nameOf(entry.key)),
+                      ),
+                      AmountText(entry.value, style: const TextStyle(fontWeight: FontWeight.w600)),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
+        if (e.notes != null) ...[
+          const SectionHeader('Notes'),
+          AppCard(child: Text(e.notes!, style: context.text.bodyMedium)),
+        ],
+      ],
+    );
+  }
+
+  Widget _row(BuildContext context, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Text(label, style: TextStyle(color: context.appColors.muted)),
+          ),
+          const SizedBox(width: 12),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _VoidDialog extends StatefulWidget {
+  const _VoidDialog();
+
+  @override
+  State<_VoidDialog> createState() => _VoidDialogState();
+}
+
+class _VoidDialogState extends State<_VoidDialog> {
+  final _reason = TextEditingController();
+
+  @override
+  void dispose() {
+    _reason.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Void this expense?'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Use this for duplicates or entries that should never have been recorded. '
+            'The expense stays visible to everyone, marked as voided, and is left out of totals. '
+            'This can\'t be undone.',
+          ),
+          const SizedBox(height: 14),
+          TextField(
+            controller: _reason,
+            autofocus: true,
+            textCapitalization: TextCapitalization.sentences,
+            decoration: const InputDecoration(labelText: 'Reason', hintText: 'e.g. Entered twice'),
+            onChanged: (_) => setState(() {}),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
+        FilledButton(
+          style: FilledButton.styleFrom(minimumSize: const Size(64, 44)),
+          onPressed: _reason.text.trim().isEmpty ? null : () => Navigator.of(context).pop(_reason.text.trim()),
+          child: const Text('Void expense'),
+        ),
+      ],
+    );
+  }
+}
