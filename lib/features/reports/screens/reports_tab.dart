@@ -20,12 +20,7 @@ class ReportsTab extends StatefulWidget {
 }
 
 class _ReportsTabState extends State<ReportsTab> {
-  static const _presets = [
-    PeriodPreset.last10Days,
-    PeriodPreset.last15Days,
-    PeriodPreset.thisMonth,
-    PeriodPreset.custom,
-  ];
+  static const _presets = [PeriodPreset.last10Days, PeriodPreset.last15Days, PeriodPreset.thisMonth];
 
   PeriodFilter _period = const PeriodFilter(PeriodPreset.last15Days);
 

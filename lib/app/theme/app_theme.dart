@@ -112,7 +112,11 @@ abstract final class AppTheme {
         surfaceTintColor: Colors.transparent,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        titleTextStyle: base.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700, color: scheme.onSurface),
+        titleTextStyle: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: scheme.onSurface),
+      ),
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: scheme.primary,
+        foregroundColor: scheme.onPrimary,
       ),
       cardTheme: CardThemeData(
         elevation: 0,

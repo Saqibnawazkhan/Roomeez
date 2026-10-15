@@ -238,17 +238,21 @@ class _MemberFields extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(12, 8, 4, 12),
       child: Column(
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Member ${index + 1}',
-                  style: context.text.labelLarge?.copyWith(color: context.appColors.muted),
+          // Fixed height so the first field's floating label never overlaps the header.
+          ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 48),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Member ${index + 1}',
+                    style: context.text.labelLarge?.copyWith(color: context.appColors.muted),
+                  ),
                 ),
-              ),
-              if (canRemove)
-                IconButton(tooltip: 'Remove this row', onPressed: onRemove, icon: const Icon(Icons.close, size: 20)),
-            ],
+                if (canRemove)
+                  IconButton(tooltip: 'Remove this row', onPressed: onRemove, icon: const Icon(Icons.close, size: 20)),
+              ],
+            ),
           ),
           Padding(
             padding: const EdgeInsets.only(right: 8),

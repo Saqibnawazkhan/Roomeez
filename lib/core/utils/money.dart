@@ -15,7 +15,13 @@ abstract final class Money {
   static int rupees(int rupees) => rupees * paisaPerRupee;
 
   /// Formats [paisa] for display, e.g. `PKR 1,250` or `PKR 1,250.50`.
-  static String format(int paisa, {bool withCurrency = true, bool signed = false}) {
+  ///
+  /// With [roundToRupee], the amount is shown to the nearest whole rupee.
+  static String format(int paisa, {bool withCurrency = true, bool signed = false, bool roundToRupee = false}) {
+    if (roundToRupee) {
+      final rupees = (paisa.abs() + paisaPerRupee ~/ 2) ~/ paisaPerRupee;
+      paisa = (paisa < 0 ? -rupees : rupees) * paisaPerRupee;
+    }
     final abs = paisa.abs();
     final whole = abs ~/ paisaPerRupee;
     final fraction = abs % paisaPerRupee;

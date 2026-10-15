@@ -59,7 +59,7 @@ class GroupCreatedScreen extends ConsumerWidget {
                     ),
                     Expanded(
                       child: LabeledValue(
-                        label: 'Initial contributions',
+                        label: 'Group fund',
                         value: Text(fund.contributedPaisa == 0 ? 'None' : Money.format(fund.contributedPaisa)),
                       ),
                     ),

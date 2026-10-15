@@ -278,7 +278,7 @@ class ExpenseDetailScreen extends ConsumerWidget {
             child: Text(label, style: TextStyle(color: context.appColors.muted)),
           ),
           const SizedBox(width: 12),
-          Flexible(
+          Expanded(
             child: Text(
               value,
               textAlign: TextAlign.right,

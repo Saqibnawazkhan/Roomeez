@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/providers.dart';
 import '../../../app/theme/app_theme.dart';
 import '../../../core/errors/app_exception.dart';
-import '../../../core/utils/phone.dart';
 import '../../../core/widgets/common.dart';
 import '../../groups/group_providers.dart';
 
@@ -47,7 +46,6 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = ref.watch(currentUserProvider);
     final invitedGroups = ref.watch(myGroupsProvider).value ?? const [];
     return Scaffold(
       appBar: AppBar(
@@ -88,15 +86,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                 validator: (value) => (value ?? '').trim().length < 2 ? 'Enter your full name' : null,
                 onFieldSubmitted: (_) => _save(),
               ),
-              const SizedBox(height: 16),
-              TextFormField(
-                initialValue: user == null ? '' : PhoneNumber.format(user.phone),
-                enabled: false,
-                decoration: const InputDecoration(
-                  labelText: 'Mobile number (verified)',
-                  prefixIcon: Icon(Icons.phone_iphone),
-                ),
-              ),
+
               const SizedBox(height: 28),
               BusyButton(label: 'Continue', busy: _busy, onPressed: _save),
             ],

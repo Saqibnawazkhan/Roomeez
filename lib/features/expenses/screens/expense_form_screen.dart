@@ -390,7 +390,10 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
           ),
           const SizedBox(height: 12),
           if (_source == PaymentSource.personal) ...[
-            Text('Paid by', style: context.text.labelLarge),
+            Padding(
+              padding: const EdgeInsets.only(left: 4),
+              child: Text('Paid by', style: context.text.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
+            ),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
@@ -486,27 +489,31 @@ class _ItemEditor extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(12, 6, 4, 12),
       child: Column(
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Item ${index + 1}',
-                  style: context.text.labelLarge?.copyWith(color: context.appColors.muted),
+          // Fixed height so the first field's floating label never overlaps the header.
+          ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 48),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Item ${index + 1}',
+                    style: context.text.labelLarge?.copyWith(color: context.appColors.muted),
+                  ),
                 ),
-              ),
-              Text(
-                line == null ? '—' : Money.format(line),
-                style: context.text.titleSmall?.copyWith(fontWeight: FontWeight.w700),
-              ),
-              if (canRemove)
-                IconButton(
-                  tooltip: 'Remove this item row',
-                  onPressed: onRemove,
-                  icon: const Icon(Icons.close, size: 20),
-                )
-              else
-                const SizedBox(width: 12),
-            ],
+                Text(
+                  line == null ? '—' : Money.format(line),
+                  style: context.text.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                ),
+                if (canRemove)
+                  IconButton(
+                    tooltip: 'Remove this item row',
+                    onPressed: onRemove,
+                    icon: const Icon(Icons.close, size: 20),
+                  )
+                else
+                  const SizedBox(width: 12),
+              ],
+            ),
           ),
           Padding(
             padding: const EdgeInsets.only(right: 8),
@@ -644,8 +651,7 @@ class _ReviewSheet extends StatelessWidget {
                     'Paid by',
                     draft.paymentSource == PaymentSource.groupFund ? 'Group fund' : snapshot.nameOf(draft.paidByUserId),
                   ),
-                  _line(context, 'Payment source', draft.paymentSource.label),
-                  _line(context, 'Added by', snapshot.nameOf(snapshot.viewerUserId)),
+
                   const SizedBox(height: 8),
                   Text('Each person\'s share', style: context.text.labelLarge),
                   const SizedBox(height: 4),
@@ -694,7 +700,7 @@ class _ReviewSheet extends StatelessWidget {
             child: Text(label, style: TextStyle(color: context.appColors.muted)),
           ),
           const SizedBox(width: 12),
-          Flexible(
+          Expanded(
             child: Text(
               value,
               textAlign: TextAlign.right,

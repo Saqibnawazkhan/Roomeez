@@ -219,6 +219,7 @@ class _MemberTile extends ConsumerWidget {
         balance?.netPaisa ?? 0,
         signed: true,
         colorize: true,
+        roundToRupee: true,
         style: const TextStyle(fontWeight: FontWeight.w700),
       ),
     );
@@ -333,6 +334,7 @@ class _MemberSheetState extends ConsumerState<_MemberSheet> {
                           b.netPaisa,
                           signed: true,
                           colorize: true,
+                          roundToRupee: true,
                           style: const TextStyle(fontWeight: FontWeight.w800),
                         ),
                       ],
@@ -387,6 +389,7 @@ class _MemberSheetState extends ConsumerState<_MemberSheet> {
           AmountText(
             paisa,
             signed: paisa < 0,
+            roundToRupee: true,
             style: const TextStyle(fontWeight: FontWeight.w600),
           ),
         ],

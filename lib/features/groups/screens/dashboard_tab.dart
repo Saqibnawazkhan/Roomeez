@@ -129,7 +129,7 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
                           label: 'Your balance',
                           icon: Icons.account_balance_wallet_outlined,
                           color: context.colors.primary,
-                          value: AmountText(myNet, signed: true, colorize: true),
+                          value: AmountText(myNet, signed: true, colorize: true, roundToRupee: true),
                           onTap: () => widget.onOpenTab(GroupTab.members),
                         ),
                       ),

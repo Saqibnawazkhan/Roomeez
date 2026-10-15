@@ -14,6 +14,7 @@ class AmountText extends StatelessWidget {
     this.colorize = false,
     this.strikethrough = false,
     this.withCurrency = true,
+    this.roundToRupee = false,
     this.textAlign,
   });
 
@@ -25,6 +26,9 @@ class AmountText extends StatelessWidget {
   final bool colorize;
   final bool strikethrough;
   final bool withCurrency;
+
+  /// Show whole rupees only, e.g. for balances.
+  final bool roundToRupee;
   final TextAlign? textAlign;
 
   @override
@@ -35,7 +39,7 @@ class AmountText extends StatelessWidget {
     }
     final base = style ?? DefaultTextStyle.of(context).style;
     return Text(
-      Money.format(paisa, signed: signed, withCurrency: withCurrency),
+      Money.format(paisa, signed: signed, withCurrency: withCurrency, roundToRupee: roundToRupee),
       textAlign: textAlign,
       style: base.copyWith(
         color: color ?? base.color,
@@ -365,7 +369,13 @@ class BottomActionBar extends StatelessWidget {
 void showAppSnack(BuildContext context, String message, {bool isError = false}) {
   final messenger = ScaffoldMessenger.of(context);
   messenger.hideCurrentSnackBar();
-  messenger.showSnackBar(SnackBar(content: Text(message), backgroundColor: isError ? context.colors.error : null));
+  messenger.showSnackBar(
+    SnackBar(
+      content: Text(message),
+      duration: const Duration(milliseconds: 2500),
+      backgroundColor: isError ? context.colors.error : null,
+    ),
+  );
 }
 
 Future<bool> showConfirmDialog(

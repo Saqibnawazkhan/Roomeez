@@ -62,14 +62,14 @@ class _VerifyCodeScreenState extends ConsumerState<VerifyCodeScreen> {
               style: context.text.bodyLarge?.copyWith(color: context.appColors.muted),
             ),
             const SizedBox(height: 16),
-            InfoBanner(
-              tone: BannerTone.prototype,
-              message: 'Demo code: ${MockAuthRepository.demoCode}',
-              action: TextButton(
-                style: TextButton.styleFrom(padding: EdgeInsets.zero, visualDensity: VisualDensity.compact),
-                onPressed: () => _code.text = MockAuthRepository.demoCode,
-                child: const Text('Use it'),
-              ),
+            Row(
+              children: [
+                Text(
+                  'Demo code: ${MockAuthRepository.demoCode}',
+                  style: context.text.bodyMedium?.copyWith(color: context.appColors.muted),
+                ),
+                TextButton(onPressed: () => _code.text = MockAuthRepository.demoCode, child: const Text('Use it')),
+              ],
             ),
             const SizedBox(height: 20),
             TextField(

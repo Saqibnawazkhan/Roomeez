@@ -41,7 +41,7 @@ class MockAuthRepository implements AuthRepository {
   Future<AppUser> verifyCode({required String phone, required String code, required bool isSignUp}) async {
     await _store.simulateLatency();
     if (code.trim() != demoCode) {
-      throw const ValidationException('Incorrect code. In this prototype the code is $demoCode.');
+      throw const ValidationException('Incorrect code. Please try again.');
     }
     var user = _store.userByPhone(phone);
     if (isSignUp) {

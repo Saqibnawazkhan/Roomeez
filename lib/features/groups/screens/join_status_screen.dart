@@ -137,7 +137,7 @@ class _JoinStatusScreenState extends ConsumerState<JoinStatusScreen> {
           Expanded(
             child: Text(label, style: TextStyle(color: context.appColors.muted)),
           ),
-          Flexible(
+          Expanded(
             child: Text(
               value,
               textAlign: TextAlign.right,

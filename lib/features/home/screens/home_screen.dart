@@ -239,7 +239,7 @@ class _GroupCard extends ConsumerWidget {
                 Expanded(
                   child: LabeledValue(
                     label: 'Your balance',
-                    value: AmountText(myNet ?? 0, signed: true, colorize: true),
+                    value: AmountText(myNet ?? 0, signed: true, colorize: true, roundToRupee: true),
                   ),
                 ),
               ],

@@ -81,7 +81,7 @@ void main() {
     await tester.pump();
     expect(find.text('PKR 300'), findsWidgets);
 
-    await tester.ensureVisible(find.text('Add item'));
+    await tester.scrollUntilVisible(find.text('Add item'), 200, scrollable: find.byType(Scrollable).first);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Add item'));
     await tester.pump();

@@ -52,17 +52,10 @@ class ProfileScreen extends ConsumerWidget {
             child: Column(
               children: [
                 ListTile(
-                  leading: const Icon(Icons.person_outline),
-                  title: const Text('Name'),
-                  subtitle: Text(user.name),
-                  trailing: const Icon(Icons.edit_outlined),
+                  leading: const Icon(Icons.edit_outlined),
+                  title: const Text('Edit name'),
+                  trailing: const Icon(Icons.chevron_right),
                   onTap: () => _editName(context, ref, user.name),
-                ),
-                const Divider(indent: 16),
-                ListTile(
-                  leading: const Icon(Icons.phone_iphone),
-                  title: const Text('Mobile number'),
-                  subtitle: Text('${PhoneNumber.format(user.phone)} (verified)'),
                 ),
               ],
             ),

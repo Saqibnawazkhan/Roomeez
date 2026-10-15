@@ -37,23 +37,7 @@ class FundCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Icon(Icons.savings_outlined, color: colors.fund, size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Group fund',
-                    style: context.text.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: colors.onFundContainer,
-                    ),
-                  ),
-                ),
-              ],
-            ),
             if (!fund.hasFund) ...[
-              const SizedBox(height: 8),
               Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: Text(
@@ -62,7 +46,6 @@ class FundCard extends StatelessWidget {
                 ),
               ),
             ] else ...[
-              const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(child: _figure(context, 'Added', fund.contributedPaisa)),
