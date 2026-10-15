@@ -1,6 +1,7 @@
 import '../../core/errors/app_exception.dart';
 import '../models/models.dart';
 import '../repositories/group_repository.dart';
+import 'mock_auth_repository.dart';
 import 'mock_seed.dart';
 import 'mock_store.dart';
 
@@ -13,6 +14,9 @@ class PrototypeTools {
 
   final MockStore _store;
   final GroupRepository _groups;
+
+  /// The sign-in code accepted by the demo.
+  String get demoCode => MockAuthRepository.demoCode;
 
   List<AppUser> get sampleUsers => [
     for (final id in sampleUserIds)

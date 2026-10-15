@@ -1,0 +1,128 @@
+{
+  "profile": {
+    "id": "65fb8657-27b2-4f4b-a976-d3b277b74fd3",
+    "name": "Hamza Khan",
+    "phone": "+923211234567",
+    "created_at": "2026-10-15T21:20:28.378+00:00",
+    "auth_user_id": "c897d8b1-5497-4db0-8e0f-1345856b27f9",
+    "has_completed_profile": false
+  },
+  "group": {
+    "id": "fa9ed5af-8ac5-4c0f-a2af-d858bef01402",
+    "code": "YUDH69",
+    "name": "Gulberg Apartment 4B",
+    "created_at": "2026-10-15T21:20:28.378+00:00",
+    "created_by": "eb3aaaef-eecc-4a4b-98ee-c0a77d18c384",
+    "description": "Shared flat"
+  },
+  "member": {
+    "id": "957305d5-fe9f-4a6c-9dcc-2982b6f02cd2",
+    "role": "member",
+    "phone": "+923451234567",
+    "status": "removed",
+    "added_by": "7e4acca3-8f53-429c-ba98-e8d57ddb59ed",
+    "end_date": "2026-10-16",
+    "group_id": "fa9ed5af-8ac5-4c0f-a2af-d858bef01402",
+    "created_at": "2026-10-15T21:20:28.513+00:00",
+    "profile_id": "74859c26-8436-4409-8234-8d067f0bf4f8",
+    "start_date": "2026-10-16",
+    "display_name": "Bilal Ahmed"
+  },
+  "joinRequest": {
+    "id": "48fd586b-0047-4ccc-865a-9fb75a0a41c7",
+    "name": "Zain Abbas",
+    "phone": "+923111234567",
+    "status": "approved",
+    "group_id": "fa9ed5af-8ac5-4c0f-a2af-d858bef01402",
+    "decided_at": "2026-10-15T21:20:28.501+00:00",
+    "decided_by": "7e4acca3-8f53-429c-ba98-e8d57ddb59ed",
+    "group_name": "Gulberg Apartment 4B",
+    "profile_id": "4d5d3058-7e41-45ff-a957-db565634fc73",
+    "requested_at": "2026-10-15T21:20:28.495+00:00"
+  },
+  "expense": {
+    "id": "f0c01bc8-8167-4e57-92a7-f510682f47e6",
+    "date": "2026-10-16",
+    "items": [
+      {
+        "id": "313e4d4d-18f5-41f9-88bd-24e363ba9e59",
+        "name": "Yogurt",
+        "quantity_milli": 1500,
+        "unit_price_paisa": 24000
+      },
+      {
+        "id": "19f91ccb-d125-4ec6-a47c-b7ddc97d7af6",
+        "name": "Odd",
+        "quantity_milli": 333,
+        "unit_price_paisa": 100
+      }
+    ],
+    "notes": null,
+    "title": "Milk and fruit",
+    "status": "active",
+    "paid_by": "eb3aaaef-eecc-4a4b-98ee-c0a77d18c384",
+    "category": "groceries",
+    "group_id": "fa9ed5af-8ac5-4c0f-a2af-d858bef01402",
+    "edited_at": null,
+    "voided_at": null,
+    "created_at": "2026-10-15T21:20:28.421+00:00",
+    "created_by": "eb3aaaef-eecc-4a4b-98ee-c0a77d18c384",
+    "split_among": [
+      "65fb8657-27b2-4f4b-a976-d3b277b74fd3",
+      "7e4acca3-8f53-429c-ba98-e8d57ddb59ed",
+      "eb3aaaef-eecc-4a4b-98ee-c0a77d18c384"
+    ],
+    "total_paisa": 36033,
+    "void_reason": null,
+    "payment_source": "personal",
+    "quick_amount_paisa": null
+  },
+  "voidedExpense": {
+    "id": "ee911b86-756b-4862-8c74-dfa387482b6d",
+    "date": "2026-10-16",
+    "items": [
+      {
+        "id": "39e1f3f3-d44f-4a6d-b068-3f1fb588e3ac",
+        "name": "Milk 1L",
+        "quantity_milli": 3000,
+        "unit_price_paisa": 22000
+      },
+      {
+        "id": "9ac0e713-8259-4a94-bd62-37855e048653",
+        "name": "Bananas",
+        "quantity_milli": 2000,
+        "unit_price_paisa": 18000
+      }
+    ],
+    "notes": null,
+    "title": "Duplicate",
+    "status": "voided",
+    "paid_by": "eb3aaaef-eecc-4a4b-98ee-c0a77d18c384",
+    "category": "groceries",
+    "group_id": "fa9ed5af-8ac5-4c0f-a2af-d858bef01402",
+    "edited_at": null,
+    "voided_at": "2026-10-15T21:20:28.468+00:00",
+    "created_at": "2026-10-15T21:20:28.464+00:00",
+    "created_by": "eb3aaaef-eecc-4a4b-98ee-c0a77d18c384",
+    "split_among": [
+      "65fb8657-27b2-4f4b-a976-d3b277b74fd3",
+      "7e4acca3-8f53-429c-ba98-e8d57ddb59ed",
+      "eb3aaaef-eecc-4a4b-98ee-c0a77d18c384"
+    ],
+    "total_paisa": 102000,
+    "void_reason": "Entered twice",
+    "payment_source": "personal",
+    "quick_amount_paisa": null
+  },
+  "contribution": {
+    "id": "b4f6e155-e250-4979-83fb-31c9efeb0295",
+    "date": "2026-10-16",
+    "note": "Joining",
+    "type": "top_up",
+    "group_id": "fa9ed5af-8ac5-4c0f-a2af-d858bef01402",
+    "created_at": "2026-10-15T21:20:28.549+00:00",
+    "recorded_by": "4d5d3058-7e41-45ff-a957-db565634fc73",
+    "amount_paisa": 300000,
+    "member_profile_id": "4d5d3058-7e41-45ff-a957-db565634fc73"
+  }
+}

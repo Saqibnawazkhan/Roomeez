@@ -7,7 +7,6 @@ import '../../../app/theme/app_theme.dart';
 import '../../../core/errors/app_exception.dart';
 import '../../../core/utils/phone.dart';
 import '../../../core/widgets/common.dart';
-import '../../../data/mock/mock_auth_repository.dart';
 
 class VerifyCodeScreen extends ConsumerStatefulWidget {
   const VerifyCodeScreen({super.key, required this.phone, required this.isSignUp});
@@ -49,6 +48,7 @@ class _VerifyCodeScreenState extends ConsumerState<VerifyCodeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final demoCode = ref.watch(prototypeToolsProvider)?.demoCode;
     return Scaffold(
       appBar: AppBar(),
       body: SafeArea(
@@ -62,15 +62,16 @@ class _VerifyCodeScreenState extends ConsumerState<VerifyCodeScreen> {
               style: context.text.bodyLarge?.copyWith(color: context.appColors.muted),
             ),
             const SizedBox(height: 16),
-            Row(
-              children: [
-                Text(
-                  'Demo code: ${MockAuthRepository.demoCode}',
-                  style: context.text.bodyMedium?.copyWith(color: context.appColors.muted),
-                ),
-                TextButton(onPressed: () => _code.text = MockAuthRepository.demoCode, child: const Text('Use it')),
-              ],
-            ),
+            if (demoCode != null)
+              Row(
+                children: [
+                  Text(
+                    'Demo code: $demoCode',
+                    style: context.text.bodyMedium?.copyWith(color: context.appColors.muted),
+                  ),
+                  TextButton(onPressed: () => _code.text = demoCode, child: const Text('Use it')),
+                ],
+              ),
             const SizedBox(height: 20),
             TextField(
               controller: _code,

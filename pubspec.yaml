@@ -44,6 +44,7 @@ dependencies:
   # Not used directly. pdf caps archive below 4.1.0, but image 4.11+ calls an
   # archive API added later, which fails to compile. Remove once pdf allows it.
   image: ">=4.8.0 <4.11.0"
+  supabase_flutter: ^2.18.3
 
 dev_dependencies:
   flutter_test:

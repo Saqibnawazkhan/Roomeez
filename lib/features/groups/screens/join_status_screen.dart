@@ -26,7 +26,9 @@ class _JoinStatusScreenState extends ConsumerState<JoinStatusScreen> {
   Future<void> _simulateApproval() async {
     setState(() => _busy = true);
     try {
-      final approver = await ref.read(prototypeToolsProvider).simulateApprovalByMember(widget.requestId);
+      final tools = ref.read(prototypeToolsProvider);
+      if (tools == null) return;
+      final approver = await tools.simulateApprovalByMember(widget.requestId);
       if (mounted) showAppSnack(context, 'Approved by $approver (simulated)');
     } catch (error) {
       if (mounted) showAppSnack(context, describeError(error), isError: true);
@@ -107,20 +109,21 @@ class _JoinStatusScreenState extends ConsumerState<JoinStatusScreen> {
         if (request.status == JoinRequestStatus.approved)
           BusyButton(label: 'Open group', onPressed: () => context.go(Routes.group(request.groupId)))
         else if (request.isPending) ...[
-          InfoBanner(
-            tone: BannerTone.prototype,
-            message: 'Demo: approve as a member.',
-            action: _busy
-                ? const Padding(
-                    padding: EdgeInsets.all(6),
-                    child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
-                  )
-                : TextButton(
-                    style: TextButton.styleFrom(padding: EdgeInsets.zero, visualDensity: VisualDensity.compact),
-                    onPressed: _simulateApproval,
-                    child: const Text('Approve now'),
-                  ),
-          ),
+          if (ref.watch(prototypeToolsProvider) != null)
+            InfoBanner(
+              tone: BannerTone.prototype,
+              message: 'Demo: approve as a member.',
+              action: _busy
+                  ? const Padding(
+                      padding: EdgeInsets.all(6),
+                      child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
+                    )
+                  : TextButton(
+                      style: TextButton.styleFrom(padding: EdgeInsets.zero, visualDensity: VisualDensity.compact),
+                      onPressed: _simulateApproval,
+                      child: const Text('Approve now'),
+                    ),
+            ),
           const SizedBox(height: 12),
           OutlinedButton(onPressed: () => context.go(Routes.home), child: const Text('Back to home')),
         ] else

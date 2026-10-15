@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/providers.dart';
 import '../../../app/routes.dart';
 import '../../../app/theme/app_theme.dart';
 import '../widgets/sample_user_sheet.dart';
@@ -49,14 +50,16 @@ class WelcomeScreen extends ConsumerWidget {
                       width: double.infinity,
                       child: OutlinedButton(onPressed: () => context.push(Routes.logIn), child: const Text('Log in')),
                     ),
-                    const SizedBox(height: 8),
-                    Center(
-                      child: TextButton.icon(
-                        onPressed: () => showSampleUserSheet(context, ref),
-                        icon: const Icon(Icons.play_circle_outline, size: 18),
-                        label: const Text('Try the demo'),
+                    if (ref.watch(prototypeToolsProvider) != null) ...[
+                      const SizedBox(height: 8),
+                      Center(
+                        child: TextButton.icon(
+                          onPressed: () => showSampleUserSheet(context, ref),
+                          icon: const Icon(Icons.play_circle_outline, size: 18),
+                          label: const Text('Try the demo'),
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),

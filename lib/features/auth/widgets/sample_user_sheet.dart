@@ -12,6 +12,7 @@ import '../../../core/widgets/common.dart';
 /// permissions (e.g. that only an expense's creator sees "Edit").
 Future<void> showSampleUserSheet(BuildContext context, WidgetRef ref) {
   final tools = ref.read(prototypeToolsProvider);
+  if (tools == null) return Future.value();
   final currentId = ref.read(currentUserIdProvider);
   return showModalBottomSheet<void>(
     context: context,

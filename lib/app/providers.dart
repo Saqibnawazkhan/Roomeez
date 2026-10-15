@@ -1,9 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../data/mock/mock_auth_repository.dart';
-import '../data/mock/mock_contribution_repository.dart';
-import '../data/mock/mock_expense_repository.dart';
-import '../data/mock/mock_group_repository.dart';
+import '../data/backend.dart';
 import '../data/mock/mock_seed.dart';
 import '../data/mock/mock_store.dart';
 import '../data/mock/prototype_tools.dart';
@@ -15,34 +12,32 @@ import '../data/repositories/group_repository.dart';
 import '../data/services/pdf_report_service.dart';
 
 // -----------------------------------------------------------------------------
-// Data wiring. This is the only place that knows the prototype uses mock
-// repositories. To connect Supabase, provide Supabase-backed implementations
-// of the repository interfaces here; screens do not change.
+// Data wiring. Screens only see the repository interfaces. By default the app
+// runs on the in-memory demo; main.dart overrides [backendProvider] with the
+// Supabase backend when it is configured.
 // -----------------------------------------------------------------------------
 
-/// PROTOTYPE ONLY: in-memory data seeded with sample records.
+/// Demo data, used when no backend is configured.
 final mockStoreProvider = Provider<MockStore>((ref) {
   final store = MockStore();
   seedSampleData(store);
   return store;
 });
 
-final authRepositoryProvider = Provider<AuthRepository>((ref) => MockAuthRepository(ref.watch(mockStoreProvider)));
+final backendProvider = Provider<Backend>((ref) => Backend.mock(ref.watch(mockStoreProvider)));
 
-final groupRepositoryProvider = Provider<GroupRepository>((ref) => MockGroupRepository(ref.watch(mockStoreProvider)));
+final authRepositoryProvider = Provider<AuthRepository>((ref) => ref.watch(backendProvider).auth);
 
-final expenseRepositoryProvider = Provider<ExpenseRepository>(
-  (ref) => MockExpenseRepository(ref.watch(mockStoreProvider)),
-);
+final groupRepositoryProvider = Provider<GroupRepository>((ref) => ref.watch(backendProvider).groups);
+
+final expenseRepositoryProvider = Provider<ExpenseRepository>((ref) => ref.watch(backendProvider).expenses);
 
 final contributionRepositoryProvider = Provider<ContributionRepository>(
-  (ref) => MockContributionRepository(ref.watch(mockStoreProvider)),
+  (ref) => ref.watch(backendProvider).contributions,
 );
 
-/// PROTOTYPE ONLY: sample-account switching and simulated approvals.
-final prototypeToolsProvider = Provider<PrototypeTools>(
-  (ref) => PrototypeTools(ref.watch(mockStoreProvider), ref.watch(groupRepositoryProvider)),
-);
+/// Demo-only shortcuts; `null` on a real backend.
+final prototypeToolsProvider = Provider<PrototypeTools?>((ref) => ref.watch(backendProvider).prototype);
 
 final pdfReportServiceProvider = Provider<PdfReportService>((ref) => const PdfReportService());
 

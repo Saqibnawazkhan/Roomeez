@@ -18,6 +18,7 @@ the first review; the rest of the document has been updated to match.
 | 9 | Navigation | Home lists groups. Inside a group, the bottom tabs are **Dashboard, Expenses, Reports, Members**; Profile is on the Home app bar. |
 | 10 | Database | **Supabase (PostgreSQL)** for the production backend (Phase 2). Firebase is not used. |
 | 11 | PDF | Generated on the device with the `pdf` package, shared via the OS share sheet. |
+| 12 | Edit history | The backend keeps the previous version of an expense on every edit or void (`expense_history`). Writes go through database functions; clients can only read. |
 
 
 ## 1. Project Overview

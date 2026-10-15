@@ -5,13 +5,15 @@ Members keep one honest, itemized record of shared spending: everyone can see
 every expense, only the person who added an expense can edit it, and nothing
 is ever erased.
 
-> **Status: UI prototype (Phase 1).** All data is sample data held in memory
-> on the device and resets when the app restarts. Login codes are not real
-> SMS messages. Permission rules are enforced in the app's mock data layer
-> only. **Server-side enforcement (Supabase row-level security) must be in
-> place before any real multi-user deployment.**
-
 The product specification is in [docs/SPEC.md](docs/SPEC.md).
+
+**Status:** Phase 2. The app runs in one of two modes:
+
+- **Demo mode** (default): sample data in memory on the phone, resets on
+  restart, sign-in code is always `123456`. Good for trying the UI.
+- **Supabase mode:** real accounts (phone + SMS code), data saved in a
+  Supabase Postgres database, rules enforced by the database, and live
+  updates between phones.
 
 ## Run it
 
@@ -20,7 +22,8 @@ a Mac for iOS.
 
 ```bash
 flutter pub get
-flutter run            # pick an Android emulator/device or iOS simulator
+flutter run                                              # demo mode
+flutter run --dart-define-from-file=supabase.env.json    # Supabase mode
 ```
 
 Checks:
@@ -28,91 +31,109 @@ Checks:
 ```bash
 flutter analyze
 flutter test
+cd supabase/tests && npm install && npm test             # database rules
 ```
 
-## Trying the prototype
+## Connecting Supabase
 
-On the welcome screen, tap **Explore with sample users** and pick an account.
-You can switch accounts any time from **Profile → Switch sample user**.
+1. **Create a project** at [supabase.com](https://supabase.com). The Mumbai
+   (South Asia) region is closest to Pakistan.
+2. **Create the database.** Either paste
+   `supabase/migrations/20261016000000_init.sql` into the dashboard's
+   *SQL Editor* and run it, or use the CLI:
+   ```bash
+   supabase login
+   supabase link --project-ref YOUR-PROJECT-REF
+   supabase db push
+   ```
+3. **Turn on phone sign-in:** *Authentication → Sign In / Providers → Phone*.
+   Enable it and connect an SMS provider (e.g. Twilio). While testing, add
+   *test phone numbers* with fixed codes there so no SMS is sent or charged.
+4. **Add your keys:** copy `supabase.env.example.json` to
+   `supabase.env.json` (it is git-ignored) and fill in the *Project URL* and
+   *Publishable key* from *Project Settings → API Keys*. The publishable key
+   is meant to be in the app; the database's row-level security decides what
+   each user can see and do. Never put the secret / service-role key in the
+   app.
+5. Run with `flutter run --dart-define-from-file=supabase.env.json`.
 
-| Sample user | Phone | Useful for |
+Realtime updates are switched on by the migration (it adds the tables to the
+`supabase_realtime` publication).
+
+## How the backend enforces the rules
+
+Clients can only **read** tables, and only rows of groups they are an active
+member of (row-level security). Every change goes through a database
+function that checks who is calling:
+
+| Rule | Enforced by |
+|---|---|
+| Only an expense's creator, while an active member, can edit or void it. The group manager gets no extra rights over expenses. | `update_expense` / `void_expense` functions |
+| Expenses, contributions, memberships and history can't be deleted; triggers block it even from the dashboard's SQL editor | no DELETE privilege + `prevent_delete` / `expenses_guard` triggers |
+| An expense's creator and group can never change; a voided expense is locked | `expenses_guard` trigger |
+| Every edit and void keeps the previous version | `expense_history` table, filled by the trigger |
+| Non-members and former members can't read a group's records | row-level security policies |
+| Only the manager removes members or changes the join code; any member adds members or approves join requests | `remove_member`, `regenerate_group_code`, `add_member`, `decide_join_request` |
+| Expenses are shared only by people who were members on that date | `prepare_expense` |
+| Totals are computed on the server from the items (integer paisa) | `prepare_expense` |
+| Someone added by phone is linked to their account when they sign up | `on_auth_user_created` trigger |
+
+The same rules are mirrored in the app (`PermissionPolicy`,
+`ExpenseValidator`) so screens only show actions that will succeed.
+`supabase/tests/db.test.mjs` runs the migration on an in-process Postgres
+(PGlite) and checks each rule as different users.
+
+## Trying demo mode
+
+On the welcome screen, tap **Try the demo** and pick an account. Switch any
+time from **Profile → Switch demo user**.
+
+| Demo user | Phone | Useful for |
 |---|---|---|
 | Ali Raza | 0300 1234567 | Manager of *Gulberg Apartment 4B*; regular member of *Hostel Room 12* |
 | Hamza Khan | 0321 1234567 | Manager of *Hostel Room 12*; added several apartment expenses |
 | Usman Tariq | 0333 1234567 | Regular member |
 | Bilal Ahmed | 0345 1234567 | Joined the apartment 6 days ago, so he isn't part of older expenses |
 
-To try sign-up or log-in, use any of those numbers to log in, or any new
-Pakistani mobile number to sign up. The verification code is always
-**123456**. Signing up with **0307 1234567** (Danish) shows account linking:
-a member already added that number to *Hostel Room 12*.
-
-Things to try:
-
-- **Creator-only editing.** As Hamza, open *Electricity bill (LESCO)*: you
-  can edit it. As Ali (the manager) or Usman, the same expense is read-only,
-  with a note explaining who can change it.
-- **Void instead of delete.** As Usman, see the voided *Pizza order*
-  duplicate. As the creator of an expense, use ⋮ → *Void expense*.
-- **Add an itemized expense.** Totals recalculate as you type; review the
-  summary before saving.
-- **Joining dates.** Add an expense dated more than a week ago: Bilal is not
-  offered as a participant.
-- **Join requests.** As Ali or any apartment member, approve Zain's request
-  on the Members tab. Or sign up as a new user, join with code `RMZ4B7`, and
-  use *Simulate approval by a member*.
-- **Remove a member / leave a group.** As Ali, remove a member from the
-  Members tab; their past expenses stay. Leave the group from Group
-  settings, and the manager role passes on.
-- **Reports.** Reports tab → pick a period → *Generate report* → *Share PDF*
-  or *Print / Save*. The PDF is created on the device.
-
-## Rules the code enforces
-
-| Rule | Where |
-|---|---|
-| Only an expense's creator (while an active member) can edit or void it, including over the group manager | `PermissionPolicy`, mock repositories, tests |
-| No delete action, icon, swipe or repository method anywhere | `test/no_delete_policy_test.dart` scans `lib/` |
-| Non-members (and former members) can't read a group's records | mock repositories, tests |
-| Money is integer paisa; quantities are integer thousandths | `core/utils/money.dart`, `core/utils/quantity.dart` |
-| Expenses are shared only by people who were members on that date | `ExpenseValidator`, `MockExpenseRepository` |
+Things to try: open *Electricity bill (LESCO)* as Hamza (editable) and as Ali
+(read-only); void one of your own expenses from its ⋮ menu; approve Zain's
+join request on the Members tab; generate a report and share the PDF.
 
 ## Project structure
 
 ```text
 lib/
-  app/                 app widget, router, routes, theme, provider wiring
+  app/                 app widget, router, theme, config, provider wiring
   core/                utilities (money, dates, phone), errors, shared widgets
   data/
     models/            User, Group, GroupMember, JoinRequest, Expense, Contribution...
     repositories/      interfaces the UI depends on
-    services/          permissions, validation, balances, reports, PDF, join codes
-    mock/              PROTOTYPE ONLY: in-memory store, sample data, mock repos
+    services/          permissions, validation, balances, reports, PDF
+    mock/              demo mode: in-memory store, sample data, mock repositories
+    supabase/          Supabase mode: repositories, row mapping, live queries
+    backend.dart       picks the set of repositories
   features/            auth, home, groups, expenses, members, contributions, reports, profile
-test/                  unit, repository and widget tests
+supabase/
+  migrations/          database schema, rules and functions
+  tests/               database rule tests (Node + PGlite)
+test/                  Dart unit, repository and widget tests
 docs/SPEC.md           product specification
 ```
 
-The UI talks only to the repository interfaces in `lib/data/repositories/`.
-`lib/app/providers.dart` is the single place that wires in the mock
-implementations, so connecting the real backend doesn't change any screen.
+Screens only use the repository interfaces; `main.dart` chooses demo or
+Supabase repositories at startup.
 
-Tech: Flutter, Riverpod (state), go_router (navigation), intl (formatting),
-pdf + printing (reports), share_plus (sharing the join code).
+Tech: Flutter, Riverpod, go_router, intl, pdf + printing, share_plus,
+supabase_flutter.
 
 ## Roadmap
 
-- **Phase 2: Supabase backend.** PostgreSQL schema; row-level security for
-  membership and creator-only edits; no DELETE grant on expenses; a trigger
-  keeping `created_by` immutable; phone OTP auth; an edit history table; SQL
-  views for reports and balances. Then replace the mock repositories.
 - **Phase 3: Release.** Push notifications (join requests, new expenses),
   offline support, Urdu translation (and a Unicode font for Urdu text in
   PDFs), Play Store and TestFlight builds.
 
 ## Known limitations
 
-- Data resets on restart (in-memory mock store).
-- No real SMS or server: the code `123456` always works.
 - PDF text is limited to Latin characters; other scripts show as `?`.
+- "Today" on the server is Pakistan time (the app is PKR-only for now).
 - iOS builds require a Mac with Xcode.

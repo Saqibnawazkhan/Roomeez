@@ -29,6 +29,11 @@ class ConflictException extends AppException {
   const ConflictException(super.message);
 }
 
+/// The server could not be reached.
+class NetworkException extends AppException {
+  const NetworkException([super.message = 'No internet connection. Please try again.']);
+}
+
 /// Returns a user-facing message for any error.
 String describeError(Object error) {
   if (error is AppException) return error.message;

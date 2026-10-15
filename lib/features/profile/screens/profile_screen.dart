@@ -60,16 +60,18 @@ class ProfileScreen extends ConsumerWidget {
               ],
             ),
           ),
-          const SectionHeader('Demo'),
-          Card(
-            clipBehavior: Clip.antiAlias,
-            child: ListTile(
-              leading: const Icon(Icons.swap_horiz),
-              title: const Text('Switch demo user'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => showSampleUserSheet(context, ref),
+          if (ref.watch(prototypeToolsProvider) != null) ...[
+            const SectionHeader('Demo'),
+            Card(
+              clipBehavior: Clip.antiAlias,
+              child: ListTile(
+                leading: const Icon(Icons.swap_horiz),
+                title: const Text('Switch demo user'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => showSampleUserSheet(context, ref),
+              ),
             ),
-          ),
+          ],
 
           const SizedBox(height: 24),
           OutlinedButton.icon(
