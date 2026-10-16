@@ -46,7 +46,13 @@ class SupabaseAuthRepository implements AuthRepository {
       return;
     }
     try {
-      final row = await _client.from('profiles').select().maybeSingle();
+      var row = await _client.from('profiles').select().maybeSingle();
+      if (row == null) {
+        // Signed in but no profile (e.g. an account older than the sign-in
+        // trigger): let the database create or link it.
+        await _client.rpc<void>('ensure_my_profile');
+        row = await _client.from('profiles').select().maybeSingle();
+      }
       _set(row == null ? null : RowMappers.profile(row));
     } catch (_) {
       // Keep the last known profile when offline.

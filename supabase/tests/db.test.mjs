@@ -321,6 +321,31 @@ await test('offline members (no email) can share expenses but never get linked',
   await expectError(hamza, 'select public.add_member($1, $2, $3, $4, $5)', [groupId, 'Bad Email', 'not-an-email', null, today], 'RZ422');
 });
 
+await test('an older account can be moved to a Google email and still finds its groups', async () => {
+  // An account from before email sign-in: profile with a phone, no email.
+  const { rows } = await db.query(`insert into auth.users (phone) values ('923099865055') returning id`);
+  const oldAuth = rows[0].id;
+  await as(oldAuth, `select public.update_my_profile('Roomeez Owner', '+923099865055')`);
+  await as(oldAuth, `select public.create_group('Roomies')`);
+  // The owner gives that profile their Gmail and frees it from the old sign-in.
+  await db.query(`update profiles set email = 'owner@gmail.com', auth_user_id = null where phone = '+923099865055'`);
+  const google = await signUp('owner@gmail.com', 'Owner From Google');
+  assertEqual((await as(google, 'select name from groups')).map((g) => g.name), ['Roomies'], 'groups after Google sign-in');
+  assertEqual(await scalar(google, 'select name from profiles'), 'Roomeez Owner', 'kept the profile');
+});
+
+await test('ensure_my_profile repairs a sign-in that has no profile', async () => {
+  // A user created while the trigger couldn't attach a profile.
+  await db.exec('alter table auth.users disable trigger on_auth_user_created');
+  const { rows } = await db.query(`insert into auth.users (email) values ('late@example.com') returning id`);
+  await db.exec('alter table auth.users enable trigger on_auth_user_created');
+  const late = rows[0].id;
+  assertEqual(await as(late, 'select id from profiles'), [], 'no profile yet');
+  await as(late, 'select public.ensure_my_profile()');
+  await as(late, 'select public.ensure_my_profile()');
+  assertEqual(await scalar(late, 'select email from profiles'), 'late@example.com', 'profile created once');
+});
+
 await test('signed-out callers are rejected', async () => {
   await expectError(null, 'select public.create_group($1)', ['Nope'], 'RZ401');
 });
