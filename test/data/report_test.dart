@@ -19,6 +19,9 @@ GroupSnapshot _apartment(String viewer) {
 }
 
 void main() {
+  // The PDF loads its fonts from the app's assets.
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   test('report lists only non-voided expenses in the period, day by day', () {
     final snapshot = _apartment('u_ali');
     final range = DateRange(DateTime(2026, 10, 1), DateTime(2026, 10, 15));
@@ -41,13 +44,17 @@ void main() {
     expect(report.members.map((m) => m.userId), contains('u_fahad'));
   });
 
-  test('a PDF is generated on the device', () async {
+  test('a one-page PDF is generated on the device, even for a long period', () async {
     final snapshot = _apartment('u_ali');
-    final report = ReportBuilder.build(snapshot, DateRange(DateTime(2026, 9, 1), DateTime(2026, 10, 15)), now: testNow);
     const service = PdfReportService();
-    final bytes = await service.build(report);
-    expect(String.fromCharCodes(bytes.take(5)), '%PDF-');
-    expect(bytes.length, greaterThan(2000));
+    for (final start in [DateTime(2026, 10, 14), DateTime(2026, 9, 1), DateTime(2025, 1, 1)]) {
+      final report = ReportBuilder.build(snapshot, DateRange(start, DateTime(2026, 10, 15)), now: testNow);
+      final bytes = await service.build(report);
+      final text = String.fromCharCodes(bytes);
+      expect(text.substring(0, 5), '%PDF-');
+      expect(RegExp(r'/Count (\d+)').firstMatch(text)?.group(1), '1');
+    }
+    final report = ReportBuilder.build(snapshot, DateRange(DateTime(2026, 9, 1), DateTime(2026, 10, 15)), now: testNow);
     expect(service.fileName(report), 'roomeez-gulberg-apartment-4b-2026-09-01-to-2026-10-15.pdf');
   });
 }

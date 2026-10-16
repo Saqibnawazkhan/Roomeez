@@ -107,11 +107,12 @@ class MemberAvatar extends StatelessWidget {
     return (parts.first.substring(0, 1) + parts.last.substring(0, 1)).toUpperCase();
   }
 
+  /// The avatar color for [name]; the PDF report uses it too.
+  static Color colorFor(String name) => _palette[name.codeUnits.fold<int>(0, (a, b) => a + b) % _palette.length];
+
   @override
   Widget build(BuildContext context) {
-    final color = muted
-        ? context.appColors.muted
-        : _palette[name.codeUnits.fold<int>(0, (a, b) => a + b) % _palette.length];
+    final color = muted ? context.appColors.muted : colorFor(name);
     // A raised ring around a soft colored disc with the initials.
     return NeuBox(
       circle: true,

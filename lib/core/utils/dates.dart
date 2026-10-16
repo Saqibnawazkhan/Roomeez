@@ -95,6 +95,7 @@ abstract final class AppDates {
   static final DateFormat _weekday = DateFormat('EEE, d MMM');
   static final DateFormat _dateTime = DateFormat('d MMM yyyy, h:mm a');
   static final DateFormat _iso = DateFormat('yyyy-MM-dd');
+  static final DateFormat _month = DateFormat('MMM yyyy');
 
   /// `15 Oct 2026`
   static String day(DateTime value) => _day.format(value);
@@ -107,6 +108,9 @@ abstract final class AppDates {
 
   /// `15 Oct 2026, 3:45 PM`
   static String dateTime(DateTime value) => _dateTime.format(value);
+
+  /// `Oct 2026`
+  static String month(DateTime value) => _month.format(value);
 
   /// `2026-10-15`, used in URLs.
   static String iso(DateTime value) => _iso.format(value);
