@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../app/config.dart';
 import '../backend.dart';
 import 'live_query.dart';
 import 'supabase_auth_repository.dart';
@@ -12,7 +13,7 @@ Future<Backend> connectSupabase({required String url, required String key}) asyn
   await Supabase.initialize(url: url, publishableKey: key);
   final client = Supabase.instance.client;
   final bus = RefreshBus();
-  final auth = SupabaseAuthRepository(client);
+  final auth = SupabaseAuthRepository(client, googleWebClientId: AppConfig.googleWebClientId);
   await auth.init();
   return Backend(
     auth: auth,

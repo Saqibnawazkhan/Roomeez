@@ -72,9 +72,10 @@ class MockStore {
 
   // ---- Lookups shared by the mock repositories ----
 
-  AppUser? userByPhone(String phone) {
+  AppUser? userByEmail(String email) {
+    final key = email.trim().toLowerCase();
     for (final user in users.values) {
-      if (user.phone == phone) return user;
+      if (user.email == key) return user;
     }
     return null;
   }
@@ -104,14 +105,18 @@ class MockStore {
 
   List<GroupMember> membersOf(String groupId) => members.values.where((m) => m.groupId == groupId).toList();
 
-  /// Finds the account for [phone], or reserves a placeholder for someone who
-  /// has not signed up yet.
-  AppUser findOrCreateUser({required String name, required String phone}) {
-    final existing = userByPhone(phone);
-    if (existing != null) return existing;
+  /// The account (or placeholder) for [email]; without an email, a new
+  /// offline member who will never be linked to an account.
+  AppUser findOrCreateMemberUser({required String name, String? email, String? phone}) {
+    final key = email?.trim().toLowerCase();
+    if (key != null && key.isNotEmpty) {
+      final existing = userByEmail(key);
+      if (existing != null) return existing;
+    }
     final user = AppUser(
       id: newId('user'),
       name: name,
+      email: key == null || key.isEmpty ? null : key,
       phone: phone,
       isRegistered: false,
       hasCompletedProfile: false,

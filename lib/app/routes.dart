@@ -5,12 +5,10 @@ enum GroupTab { dashboard, expenses, reports, members }
 /// Every location in the app, in one place.
 abstract final class Routes {
   static const welcome = '/welcome';
-  static const signUp = '/signup';
-  static const logIn = '/login';
+  static const email = '/email';
   static const profileSetup = '/profile-setup';
 
-  static String verify({required String phone, required bool isSignUp}) =>
-      Uri(path: '/verify', queryParameters: {'phone': phone, 'mode': isSignUp ? 'signup' : 'login'}).toString();
+  static String verify({required String email}) => Uri(path: '/verify', queryParameters: {'email': email}).toString();
 
   static const home = '/';
   static const profile = '/profile';

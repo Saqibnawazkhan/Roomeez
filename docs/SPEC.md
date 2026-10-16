@@ -14,7 +14,7 @@ the first review; the rest of the document has been updated to match.
 | 5 | Mistaken entries | The creator can **void** an expense (with a reason). Voided expenses stay visible, marked as voided, and are excluded from totals, balances and reports. This is not a delete. |
 | 6 | Group fund | Contributions can be added at any time (top-ups), not only at creation. Show the fund's remaining balance. |
 | 7 | Quick entry | Item rows are optional: an expense can be **itemized** or a **single amount** (e.g. a utility bill). |
-| 8 | Account linking | Login is **phone number + one-time code**. A member added by phone is linked automatically when that person signs up with the same number. |
+| 8 | Sign-in and account linking | Sign in with **Google** or a **code sent by email** (both verify the email; no SMS cost). A member added by email is linked automatically when that person signs in with it. Phone numbers are optional contact details and never used to sign in or link accounts. Members added without an email are offline members. *(Changed 2026-10-17; was phone + SMS code.)* |
 | 9 | Navigation | Home lists groups. Inside a group, the bottom tabs are **Dashboard, Expenses, Reports, Members**; Profile is on the Home app bar. |
 | 10 | Database | **Supabase (PostgreSQL)** for the production backend (Phase 2). Firebase is not used. |
 | 11 | PDF | Generated on the device with the `pdf` package, shared via the OS share sheet. |

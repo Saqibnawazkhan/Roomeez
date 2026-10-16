@@ -78,11 +78,10 @@ class SupabaseGroupRepository implements GroupRepository {
         'p_name': input.name,
         'p_description': input.description,
         'p_members': [
-          for (final m in input.members) {'name': m.name, 'phone': m.phone},
+          for (final m in input.members)
+            {'name': m.name, 'email': m.email, 'phone': m.phone, 'contribution_paisa': m.initialContributionPaisa},
         ],
-        'p_contributions': [
-          for (final e in input.initialContributionsByPhone.entries) {'phone': e.key, 'amount_paisa': e.value},
-        ],
+        'p_my_contribution_paisa': input.myContributionPaisa,
       },
     );
     return _group(id);
@@ -113,6 +112,7 @@ class SupabaseGroupRepository implements GroupRepository {
       params: {
         'p_group': groupId,
         'p_name': member.name,
+        'p_email': member.email,
         'p_phone': member.phone,
         'p_start_date': RowMappers.isoDate(startDate),
       },
@@ -171,16 +171,12 @@ class SupabaseGroupRepository implements GroupRepository {
   );
 
   @override
-  Future<JoinRequest> requestToJoin({
-    required String userId,
-    required String code,
-    required String name,
-    required String phone,
-  }) => _write(() async {
-    // The phone on the request is always the signed-in user's own number.
-    final id = await _client.rpc<String>('request_to_join', params: {'p_code': code, 'p_name': name});
-    return RowMappers.joinRequest(await _client.from('join_requests').select().eq('id', id).single());
-  });
+  Future<JoinRequest> requestToJoin({required String userId, required String code, required String name}) =>
+      _write(() async {
+        // The phone on the request is always the signed-in user's own number.
+        final id = await _client.rpc<String>('request_to_join', params: {'p_code': code, 'p_name': name});
+        return RowMappers.joinRequest(await _client.from('join_requests').select().eq('id', id).single());
+      });
 
   @override
   Future<void> approveJoinRequest({required String actorUserId, required String requestId}) =>

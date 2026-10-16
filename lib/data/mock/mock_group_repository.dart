@@ -57,12 +57,12 @@ class MockGroupRepository implements GroupRepository {
     );
     _store.groups[group.id] = group;
 
-    final memberIdsByPhone = <String, String>{creator.phone: creator.id};
     final creatorMember = GroupMember(
       id: _store.newId('member'),
       groupId: group.id,
       userId: creator.id,
       displayName: creator.name,
+      email: creator.email,
       phone: creator.phone,
       role: MemberRole.manager,
       status: MemberStatus.active,
@@ -70,15 +70,17 @@ class MockGroupRepository implements GroupRepository {
       addedByUserId: creator.id,
     );
     _store.members[creatorMember.id] = creatorMember;
+    _contribute(group.id, creator.id, input.myContributionPaisa, day, creator.id);
+
     for (final input in input.members) {
-      if (memberIdsByPhone.containsKey(input.phone)) continue;
-      final user = _store.findOrCreateUser(name: input.name.trim(), phone: input.phone);
-      memberIdsByPhone[input.phone] = user.id;
+      final user = _store.findOrCreateMemberUser(name: input.name.trim(), email: input.email, phone: input.phone);
+      if (_store.activeMembership(group.id, user.id) != null) continue;
       final member = GroupMember(
         id: _store.newId('member'),
         groupId: group.id,
         userId: user.id,
-        displayName: input.name.trim(),
+        displayName: user.isRegistered && user.name.isNotEmpty ? user.name : input.name.trim(),
+        email: user.email,
         phone: input.phone,
         role: MemberRole.member,
         status: MemberStatus.active,
@@ -86,26 +88,26 @@ class MockGroupRepository implements GroupRepository {
         addedByUserId: creator.id,
       );
       _store.members[member.id] = member;
+      _contribute(group.id, user.id, input.initialContributionPaisa, day, creator.id);
     }
-
-    input.initialContributionsByPhone.forEach((phone, amount) {
-      final userId = memberIdsByPhone[phone];
-      if (userId == null || amount <= 0) return;
-      final contribution = Contribution(
-        id: _store.newId('contribution'),
-        groupId: group.id,
-        memberUserId: userId,
-        amountPaisa: amount,
-        date: day,
-        type: ContributionType.initial,
-        recordedByUserId: creator.id,
-        createdAt: now,
-      );
-      _store.contributions[contribution.id] = contribution;
-    });
 
     _store.notify();
     return group;
+  }
+
+  void _contribute(String groupId, String userId, int amount, DateTime day, String recordedBy) {
+    if (amount <= 0) return;
+    final contribution = Contribution(
+      id: _store.newId('contribution'),
+      groupId: groupId,
+      memberUserId: userId,
+      amountPaisa: amount,
+      date: day,
+      type: ContributionType.initial,
+      recordedByUserId: recordedBy,
+      createdAt: _store.now(),
+    );
+    _store.contributions[contribution.id] = contribution;
   }
 
   @override
@@ -143,7 +145,7 @@ class MockGroupRepository implements GroupRepository {
     }
     final name = member.name.trim();
     if (name.isEmpty) throw const ValidationException('Enter the member\'s name.');
-    final user = _store.findOrCreateUser(name: name, phone: member.phone);
+    final user = _store.findOrCreateMemberUser(name: name, email: member.email, phone: member.phone);
     if (_store.activeMembership(groupId, user.id) != null) {
       throw ConflictException('${user.name.isEmpty ? name : user.name} is already a member of this group.');
     }
@@ -152,6 +154,7 @@ class MockGroupRepository implements GroupRepository {
       groupId: groupId,
       userId: user.id,
       displayName: user.isRegistered && user.name.isNotEmpty ? user.name : name,
+      email: user.email,
       phone: member.phone,
       role: MemberRole.member,
       status: MemberStatus.active,
@@ -246,12 +249,7 @@ class MockGroupRepository implements GroupRepository {
   }
 
   @override
-  Future<JoinRequest> requestToJoin({
-    required String userId,
-    required String code,
-    required String name,
-    required String phone,
-  }) async {
+  Future<JoinRequest> requestToJoin({required String userId, required String code, required String name}) async {
     await _store.simulateLatency();
     final group = _store.groupByCode(GroupCodeFormat.normalize(code));
     if (group == null) throw const NotFoundException('No group found with this code.');
@@ -261,13 +259,15 @@ class MockGroupRepository implements GroupRepository {
     for (final r in _store.joinRequests.values) {
       if (r.groupId == group.id && r.userId == userId && r.isPending) return r;
     }
+    final requester = _store.users[userId];
     final request = JoinRequest(
       id: _store.newId('request'),
       groupId: group.id,
       groupName: group.name,
       userId: userId,
       name: name.trim(),
-      phone: phone,
+      email: requester?.email,
+      phone: requester?.phone,
       status: JoinRequestStatus.pending,
       requestedAt: _store.now(),
     );
@@ -290,6 +290,7 @@ class MockGroupRepository implements GroupRepository {
         groupId: request.groupId,
         userId: request.userId,
         displayName: request.name,
+        email: request.email,
         phone: request.phone,
         role: MemberRole.member,
         status: MemberStatus.active,

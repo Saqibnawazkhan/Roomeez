@@ -138,7 +138,7 @@ class PdfReportService {
       final until = m.endDate == null ? 'Present' : '${AppDates.day(m.endDate!)} (${m.status.label.toLowerCase()})';
       rows.add([
         m.displayName,
-        PhoneNumber.format(m.phone),
+        m.phone != null ? PhoneNumber.format(m.phone!) : (m.email ?? '-'),
         AppDates.day(m.startDate),
         until,
         Money.format(balance?.paidInPaisa ?? 0, withCurrency: false),
@@ -150,7 +150,7 @@ class PdfReportService {
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
         _table(
-          headers: const ['Member', 'Phone', 'Member since', 'Until', 'Paid in', 'Share', 'Net'],
+          headers: const ['Member', 'Contact', 'Member since', 'Until', 'Paid in', 'Share', 'Net'],
           rows: rows,
           numericColumns: const {4, 5, 6},
         ),

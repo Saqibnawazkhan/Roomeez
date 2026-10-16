@@ -22,10 +22,11 @@ class GroupMember {
     required this.groupId,
     required this.userId,
     required this.displayName,
-    required this.phone,
     required this.role,
     required this.status,
     required this.startDate,
+    this.email,
+    this.phone,
     this.endDate,
     this.addedByUserId,
   });
@@ -34,7 +35,13 @@ class GroupMember {
   final String groupId;
   final String userId;
   final String displayName;
-  final String phone;
+
+  /// The email this member was added or signed in with; `null` for offline
+  /// members.
+  final String? email;
+
+  /// Optional contact number, for the record only.
+  final String? phone;
   final MemberRole role;
   final MemberStatus status;
 
@@ -60,11 +67,29 @@ class GroupMember {
       groupId: groupId,
       userId: userId,
       displayName: displayName ?? this.displayName,
+      email: email,
       phone: phone,
       role: role ?? this.role,
       status: status ?? this.status,
       startDate: startDate,
       endDate: endDate ?? this.endDate,
+      addedByUserId: addedByUserId,
+    );
+  }
+
+  /// A copy with the member's current name and phone (`null` clears it).
+  GroupMember withContact({required String displayName, required String? phone}) {
+    return GroupMember(
+      id: id,
+      groupId: groupId,
+      userId: userId,
+      displayName: displayName,
+      email: email,
+      phone: phone,
+      role: role,
+      status: status,
+      startDate: startDate,
+      endDate: endDate,
       addedByUserId: addedByUserId,
     );
   }

@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../../app/providers.dart';
 import '../../../app/routes.dart';
 import '../../../app/theme/app_theme.dart';
+import '../../../core/errors/app_exception.dart';
+import '../../../core/widgets/common.dart';
 import '../widgets/sample_user_sheet.dart';
 
 class WelcomeScreen extends ConsumerWidget {
@@ -38,17 +40,17 @@ class WelcomeScreen extends ConsumerWidget {
                     ),
                     const Spacer(),
                     const SizedBox(height: 24),
+                    if (ref.watch(authRepositoryProvider).supportsGoogle) ...[
+                      const _GoogleButton(),
+                      const SizedBox(height: 12),
+                    ],
                     SizedBox(
                       width: double.infinity,
-                      child: FilledButton(
-                        onPressed: () => context.push(Routes.signUp),
-                        child: const Text('Create an account'),
+                      child: OutlinedButton.icon(
+                        onPressed: () => context.push(Routes.email),
+                        icon: const Icon(Icons.mail_outline),
+                        label: const Text('Continue with email'),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton(onPressed: () => context.push(Routes.logIn), child: const Text('Log in')),
                     ),
                     if (ref.watch(prototypeToolsProvider) != null) ...[
                       const SizedBox(height: 8),
@@ -87,6 +89,58 @@ class _LogoMark extends StatelessWidget {
         const SizedBox(width: 12),
         Text('Roomeez', style: context.text.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
       ],
+    );
+  }
+}
+
+/// "Continue with Google". On success the router moves on by itself.
+class _GoogleButton extends ConsumerStatefulWidget {
+  const _GoogleButton();
+
+  @override
+  ConsumerState<_GoogleButton> createState() => _GoogleButtonState();
+}
+
+class _GoogleButtonState extends ConsumerState<_GoogleButton> {
+  bool _busy = false;
+
+  Future<void> _signIn() async {
+    setState(() => _busy = true);
+    try {
+      await ref.read(authRepositoryProvider).signInWithGoogle();
+    } catch (error) {
+      if (mounted) showAppSnack(context, describeError(error), isError: true);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: FilledButton(
+        onPressed: _busy ? null : _signIn,
+        child: _busy
+            ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.4))
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 24,
+                    height: 24,
+                    alignment: Alignment.center,
+                    decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                    child: const Text(
+                      'G',
+                      style: TextStyle(color: Color(0xFF4285F4), fontWeight: FontWeight.w800, fontSize: 15),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  const Flexible(child: Text('Continue with Google', overflow: TextOverflow.ellipsis)),
+                ],
+              ),
+      ),
     );
   }
 }

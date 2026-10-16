@@ -198,8 +198,11 @@ void main() {
         actorUserId: 'u_bilal',
         input: const NewGroupInput(
           name: 'Model Town Flat',
-          members: [NewMemberInput(name: 'Omar Farooq', phone: '+923004445556')],
-          initialContributionsByPhone: {'+923451234567': 500000, '+923004445556': 500000},
+          members: [
+            NewMemberInput(name: 'Omar Farooq', email: 'omar@example.com', initialContributionPaisa: 500000),
+            NewMemberInput(name: 'Offline Friend', phone: '+923004445556'),
+          ],
+          myContributionPaisa: 500000,
         ),
       );
       expect(group.code, matches(RegExp(r'^[A-Z0-9]{6}$')));
@@ -208,14 +211,17 @@ void main() {
         store,
       ).watchContributions(groupId: group.id, viewerUserId: 'u_bilal').first;
       expect(contributions.fold(0, (sum, c) => sum + c.amountPaisa), 1000000);
+      final offline = store.membersOf(group.id).singleWhere((m) => m.displayName == 'Offline Friend');
+      expect(offline.email, isNull);
+      expect(offline.phone, '+923004445556');
     });
   });
 
   group('auth', () {
-    test('signing up with a number a member added links the account', () async {
+    test('signing in with an email a member added links the account', () async {
       final auth = MockAuthRepository(store);
-      await auth.requestCode(phone: '+923071234567', isSignUp: true);
-      final user = await auth.verifyCode(phone: '+923071234567', code: '123456', isSignUp: true);
+      await auth.sendEmailCode('Danish.Iqbal@gmail.com');
+      final user = await auth.verifyEmailCode(email: 'Danish.Iqbal@gmail.com', code: '123456');
       expect(user.id, 'u_danish');
       expect(user.isRegistered, isTrue);
       final groupsForDanish = await groups.watchGroupsForUser(user.id).first;
@@ -225,9 +231,19 @@ void main() {
     test('a wrong code is rejected', () async {
       final auth = MockAuthRepository(store);
       await expectLater(
-        auth.verifyCode(phone: '+923001234567', code: '000000', isSignUp: false),
+        auth.verifyEmailCode(email: 'ali.raza@gmail.com', code: '000000'),
         throwsA(isA<ValidationException>()),
       );
+    });
+
+    test('a new email gets a fresh account that must complete its profile', () async {
+      final auth = MockAuthRepository(store);
+      final user = await auth.verifyEmailCode(email: 'new.person@example.com', code: '123456');
+      expect(user.isRegistered, isTrue);
+      expect(user.hasCompletedProfile, isFalse);
+      final updated = await auth.updateProfile(name: 'New Person', phone: null);
+      expect(updated.hasCompletedProfile, isTrue);
+      expect(updated.phone, isNull);
     });
   });
 }

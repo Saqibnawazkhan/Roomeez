@@ -45,6 +45,7 @@ dependencies:
   # archive API added later, which fails to compile. Remove once pdf allows it.
   image: ">=4.8.0 <4.11.0"
   supabase_flutter: ^2.18.3
+  google_sign_in: ^7.2.0
 
 dev_dependencies:
   flutter_test:

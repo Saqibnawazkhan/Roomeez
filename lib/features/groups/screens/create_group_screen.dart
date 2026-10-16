@@ -19,13 +19,19 @@ class CreateGroupScreen extends ConsumerStatefulWidget {
   ConsumerState<CreateGroupScreen> createState() => _CreateGroupScreenState();
 }
 
+final RegExp _emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+
 class _MemberRow {
   final name = TextEditingController();
+  final email = TextEditingController();
   final phone = TextEditingController();
   final contribution = TextEditingController();
 
+  bool get isBlank => name.text.trim().isEmpty && email.text.trim().isEmpty && phone.text.trim().isEmpty;
+
   void dispose() {
     name.dispose();
+    email.dispose();
     phone.dispose();
     contribution.dispose();
   }
@@ -51,7 +57,7 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
     super.dispose();
   }
 
-  bool _rowIsBlank(_MemberRow row) => row.name.text.trim().isEmpty && row.phone.text.trim().isEmpty;
+  bool _rowIsBlank(_MemberRow row) => row.isBlank;
 
   int get _fundTotal {
     var total = Money.tryParse(_myContribution.text) ?? 0;
@@ -72,18 +78,22 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
     if (user == null) return;
 
     final members = <NewMemberInput>[];
-    final contributions = <String, int>{};
-    final seen = <String>{user.phone};
-    if (_withFund) contributions[user.phone] = Money.tryParse(_myContribution.text) ?? 0;
+    final seenEmails = <String>{?user.email};
     for (final row in _rows) {
       if (_rowIsBlank(row)) continue;
-      final phone = PhoneNumber.normalize(row.phone.text)!;
-      if (!seen.add(phone)) {
-        showAppSnack(context, 'Each member needs a different phone number.', isError: true);
+      final email = row.email.text.trim().toLowerCase();
+      if (email.isNotEmpty && !seenEmails.add(email)) {
+        showAppSnack(context, 'Each member needs a different email.', isError: true);
         return;
       }
-      members.add(NewMemberInput(name: row.name.text.trim(), phone: phone));
-      if (_withFund) contributions[phone] = Money.tryParse(row.contribution.text) ?? 0;
+      members.add(
+        NewMemberInput(
+          name: row.name.text.trim(),
+          email: email.isEmpty ? null : email,
+          phone: PhoneNumber.normalizeOptional(row.phone.text),
+          initialContributionPaisa: _withFund ? Money.tryParse(row.contribution.text) ?? 0 : 0,
+        ),
+      );
     }
 
     setState(() => _busy = true);
@@ -96,7 +106,7 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
               name: _name.text,
               description: _description.text,
               members: members,
-              initialContributionsByPhone: contributions,
+              myContributionPaisa: _withFund ? Money.tryParse(_myContribution.text) ?? 0 : 0,
             ),
           );
       if (!mounted) return;
@@ -230,7 +240,7 @@ class _MemberFields extends StatelessWidget {
   final VoidCallback onChanged;
   final VoidCallback onRemove;
 
-  bool get _blank => row.name.text.trim().isEmpty && row.phone.text.trim().isEmpty;
+  bool get _blank => row.isBlank;
 
   @override
   Widget build(BuildContext context) {
@@ -267,16 +277,30 @@ class _MemberFields extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 TextFormField(
+                  controller: row.email,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(
+                    labelText: 'Email (optional)',
+                    hintText: 'They join when they sign in with it',
+                    isDense: true,
+                  ),
+                  validator: (v) {
+                    final text = (v ?? '').trim();
+                    return text.isEmpty || _emailPattern.hasMatch(text) ? null : 'Enter a valid email';
+                  },
+                  onChanged: (_) => onChanged(),
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
                   controller: row.phone,
                   keyboardType: TextInputType.phone,
                   inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9+\s-]'))],
                   decoration: const InputDecoration(
-                    labelText: 'Mobile number',
+                    labelText: 'Mobile number (optional)',
                     hintText: '0300 1234567',
                     isDense: true,
                   ),
-                  validator: (v) =>
-                      !_blank && PhoneNumber.normalize(v ?? '') == null ? 'Enter a valid mobile number' : null,
+                  validator: PhoneNumber.optionalFieldError,
                   onChanged: (_) => onChanged(),
                 ),
               ],

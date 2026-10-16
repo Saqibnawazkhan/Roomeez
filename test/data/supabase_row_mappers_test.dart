@@ -82,8 +82,7 @@ void main() {
   });
 
   test('database error codes become app exceptions with their message', () {
-    AppException map(String code, String message) =>
-        mapSupabaseError(PostgrestException(message: message, code: code));
+    AppException map(String code, String message) => mapSupabaseError(PostgrestException(message: message, code: code));
 
     expect(map('RZ403', 'Only the person who added this expense can change it.'), isA<PermissionDeniedException>());
     expect(map('RZ404', 'Expense not found.'), isA<NotFoundException>());

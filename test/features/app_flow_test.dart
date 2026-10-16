@@ -38,8 +38,8 @@ Future<MockStore> pumpApp(WidgetTester tester, {String? signedInAs, String? loca
 void main() {
   testWidgets('signed-out users land on the welcome screen', (tester) async {
     await pumpApp(tester);
-    expect(find.text('Create an account'), findsOneWidget);
-    expect(find.text('Log in'), findsOneWidget);
+    expect(find.text('Continue with Google'), findsOneWidget);
+    expect(find.text('Continue with email'), findsOneWidget);
   });
 
   testWidgets('home lists the signed-in user\'s groups', (tester) async {

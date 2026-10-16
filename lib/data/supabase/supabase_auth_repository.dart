@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/errors/app_exception.dart';
@@ -8,14 +9,17 @@ import '../repositories/auth_repository.dart';
 import 'row_mappers.dart';
 import 'supabase_errors.dart';
 
-/// Phone + SMS code sign-in with Supabase Auth. The `profiles` row is created
-/// (or linked to a placeholder added by a group member) by a database trigger.
+/// Google or email-code sign-in with Supabase Auth. The `profiles` row is
+/// created (or linked to a placeholder a group member added by email) by a
+/// database trigger.
 class SupabaseAuthRepository implements AuthRepository {
-  SupabaseAuthRepository(this._client);
+  SupabaseAuthRepository(this._client, {required String googleWebClientId}) : _googleWebClientId = googleWebClientId;
 
   final SupabaseClient _client;
+  final String _googleWebClientId;
   final StreamController<AppUser?> _changes = StreamController<AppUser?>.broadcast();
   StreamSubscription<AuthState>? _subscription;
+  Future<void>? _googleReady;
   AppUser? _user;
 
   /// Loads the profile of a saved session. Call once before the app starts so
@@ -59,6 +63,13 @@ class SupabaseAuthRepository implements AuthRepository {
     if (changed && !_changes.isClosed) _changes.add(user);
   }
 
+  Future<AppUser> _signedInUser() async {
+    await _reload();
+    final user = _user;
+    if (user == null) throw const NotFoundException('Your profile could not be loaded. Please try again.');
+    return user;
+  }
+
   @override
   AppUser? get currentUser => _user;
 
@@ -69,34 +80,61 @@ class SupabaseAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<void> requestCode({required String phone, required bool isSignUp}) {
-    // Signing up with a number that already has an account simply logs in.
-    return guarded(() => _client.auth.signInWithOtp(phone: phone, shouldCreateUser: isSignUp));
-  }
+  bool get supportsGoogle => _googleWebClientId.isNotEmpty;
 
   @override
-  Future<AppUser> verifyCode({required String phone, required String code, required bool isSignUp}) {
+  Future<AppUser> signInWithGoogle() async {
+    final google = GoogleSignIn.instance;
+    final GoogleSignInAccount account;
+    try {
+      await (_googleReady ??= google.initialize(serverClientId: _googleWebClientId));
+      account = await google.authenticate();
+    } on GoogleSignInException catch (error) {
+      if (error.code == GoogleSignInExceptionCode.canceled) {
+        throw const ValidationException('Google sign-in was cancelled.');
+      }
+      throw ValidationException('Google sign-in failed: ${error.description ?? error.code.name}');
+    }
+    final idToken = account.authentication.idToken;
+    if (idToken == null) throw const ValidationException('Google didn\'t return a sign-in token. Please try again.');
     return guarded(() async {
-      await _client.auth.verifyOTP(phone: phone, token: code.trim(), type: OtpType.sms);
-      await _reload();
-      final user = _user;
-      if (user == null) throw const NotFoundException('Your profile could not be loaded. Please try again.');
-      return user;
+      await _client.auth.signInWithIdToken(provider: OAuthProvider.google, idToken: idToken);
+      return _signedInUser();
     });
   }
 
   @override
-  Future<AppUser> updateProfile({required String name}) {
+  Future<void> sendEmailCode(String email) {
+    return guarded(() => _client.auth.signInWithOtp(email: email.trim().toLowerCase(), shouldCreateUser: true));
+  }
+
+  @override
+  Future<AppUser> verifyEmailCode({required String email, required String code}) {
     return guarded(() async {
-      await _client.rpc<void>('update_my_profile', params: {'p_name': name});
-      await _reload();
-      return _user!;
+      await _client.auth.verifyOTP(email: email.trim().toLowerCase(), token: code.trim(), type: OtpType.email);
+      return _signedInUser();
+    });
+  }
+
+  @override
+  Future<AppUser> updateProfile({required String name, String? phone}) {
+    return guarded(() async {
+      await _client.rpc<void>('update_my_profile', params: {'p_name': name, 'p_phone': phone});
+      return _signedInUser();
     });
   }
 
   @override
   Future<void> signOut() async {
-    await guarded(() => _client.auth.signOut());
+    // Only this device's session; other devices stay signed in.
+    await guarded(() => _client.auth.signOut(scope: SignOutScope.local));
+    if (supportsGoogle) {
+      try {
+        await GoogleSignIn.instance.signOut();
+      } catch (_) {
+        // Not signed in with Google on this device.
+      }
+    }
     _set(null);
   }
 }

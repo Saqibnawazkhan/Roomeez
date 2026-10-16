@@ -1,23 +1,29 @@
 import '../models/models.dart';
 
-/// Phone-number + one-time-code authentication.
+/// Sign-in with Google or a code sent by email. Both verify the email
+/// address, which is what links a person to the groups they were added to.
 ///
-/// Production: Supabase Auth phone OTP. Prototype: [MockAuthRepository],
-/// which sends no SMS and accepts a fixed demo code.
+/// Production: Supabase Auth. Demo: [MockAuthRepository], which sends nothing
+/// and accepts a fixed code.
 abstract interface class AuthRepository {
   AppUser? get currentUser;
 
   /// Emits the current user immediately, then on every change.
   Stream<AppUser?> authStateChanges();
 
-  /// Starts sign-up or log-in for [phone] (normalized E.164).
-  Future<void> requestCode({required String phone, required bool isSignUp});
+  /// Whether "Continue with Google" can be offered.
+  bool get supportsGoogle;
 
-  /// Verifies the code and signs the user in.
-  Future<AppUser> verifyCode({required String phone, required String code, required bool isSignUp});
+  Future<AppUser> signInWithGoogle();
 
-  /// Completes or updates the signed-in user's profile.
-  Future<AppUser> updateProfile({required String name});
+  /// Emails a one-time sign-in code to [email].
+  Future<void> sendEmailCode(String email);
+
+  Future<AppUser> verifyEmailCode({required String email, required String code});
+
+  /// Completes or updates the profile. [phone] is optional (normalized E.164)
+  /// and `null` removes it.
+  Future<AppUser> updateProfile({required String name, String? phone});
 
   Future<void> signOut();
 }

@@ -22,7 +22,10 @@ class AddMemberScreen extends ConsumerStatefulWidget {
 
 class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
   final _formKey = GlobalKey<FormState>();
+  static final RegExp _emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+
   final _name = TextEditingController();
+  final _email = TextEditingController();
   final _phone = TextEditingController();
   DateTime _startDate = today();
   bool _busy = false;
@@ -30,6 +33,7 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
   @override
   void dispose() {
     _name.dispose();
+    _email.dispose();
     _phone.dispose();
     super.dispose();
   }
@@ -57,7 +61,11 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
           .addMember(
             actorUserId: userId,
             groupId: widget.groupId,
-            member: NewMemberInput(name: _name.text, phone: PhoneNumber.normalize(_phone.text)!),
+            member: NewMemberInput(
+              name: _name.text,
+              email: _email.text.trim().isEmpty ? null : _email.text.trim().toLowerCase(),
+              phone: PhoneNumber.normalizeOptional(_phone.text),
+            ),
             startDate: _startDate,
           );
       if (!mounted) return;
@@ -88,15 +96,29 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
             ),
             const SizedBox(height: 12),
             TextFormField(
+              controller: _email,
+              keyboardType: TextInputType.emailAddress,
+              decoration: const InputDecoration(
+                labelText: 'Email (optional)',
+                hintText: 'their.name@gmail.com',
+                prefixIcon: Icon(Icons.mail_outline),
+              ),
+              validator: (v) {
+                final text = (v ?? '').trim();
+                return text.isEmpty || _emailPattern.hasMatch(text) ? null : 'Enter a valid email';
+              },
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
               controller: _phone,
               keyboardType: TextInputType.phone,
               inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9+\s-]'))],
               decoration: const InputDecoration(
-                labelText: 'Mobile number',
+                labelText: 'Mobile number (optional)',
                 hintText: '0300 1234567',
                 prefixIcon: Icon(Icons.phone_iphone),
               ),
-              validator: (v) => PhoneNumber.normalize(v ?? '') == null ? 'Enter a valid mobile number' : null,
+              validator: PhoneNumber.optionalFieldError,
             ),
             const SizedBox(height: 12),
             InkWell(
@@ -109,7 +131,8 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              'They share expenses from this date onward.',
+              'They share expenses from this date onward. With an email, they see the group '
+              'when they sign in with it.',
               style: context.text.bodySmall?.copyWith(color: context.appColors.muted),
             ),
           ],

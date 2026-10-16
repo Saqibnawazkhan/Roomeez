@@ -142,7 +142,7 @@ class _JoinRequestCardState extends ConsumerState<_JoinRequestCard> {
                   children: [
                     Text(r.name, style: const TextStyle(fontWeight: FontWeight.w700)),
                     Text(
-                      '${PhoneNumber.format(r.phone)}  ·  ${AppDates.relativeDay(r.requestedAt)}',
+                      [?r.email, AppDates.relativeDay(r.requestedAt)].join('  ·  '),
                       style: context.text.bodySmall?.copyWith(color: context.appColors.muted),
                     ),
                   ],
@@ -297,7 +297,11 @@ class _MemberSheetState extends ConsumerState<_MemberSheet> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(m.displayName, style: context.text.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
-                      Text(PhoneNumber.format(m.phone), style: TextStyle(color: context.appColors.muted)),
+                      if (m.email != null) Text(m.email!, style: TextStyle(color: context.appColors.muted)),
+                      if (m.phone != null)
+                        Text(PhoneNumber.format(m.phone!), style: TextStyle(color: context.appColors.muted)),
+                      if (m.email == null && m.isActive)
+                        Text('Offline member (no email)', style: TextStyle(color: context.appColors.muted)),
                     ],
                   ),
                 ),

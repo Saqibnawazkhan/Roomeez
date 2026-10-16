@@ -1,21 +1,23 @@
 import '../models/models.dart';
 
 class NewMemberInput {
-  const NewMemberInput({required this.name, required this.phone});
+  const NewMemberInput({required this.name, this.email, this.phone, this.initialContributionPaisa = 0});
 
   final String name;
 
-  /// Normalized E.164 phone number.
-  final String phone;
+  /// With an email the person joins automatically when they sign in with it.
+  /// Without one they are an offline member.
+  final String? email;
+
+  /// Optional normalized E.164 phone number, for the record only.
+  final String? phone;
+
+  /// Optional opening contribution to the group fund (group creation only).
+  final int initialContributionPaisa;
 }
 
 class NewGroupInput {
-  const NewGroupInput({
-    required this.name,
-    required this.members,
-    this.description,
-    this.initialContributionsByPhone = const {},
-  });
+  const NewGroupInput({required this.name, required this.members, this.description, this.myContributionPaisa = 0});
 
   final String name;
   final String? description;
@@ -23,8 +25,8 @@ class NewGroupInput {
   /// Members other than the creator.
   final List<NewMemberInput> members;
 
-  /// Optional initial fund, keyed by member phone (creator included), in paisa.
-  final Map<String, int> initialContributionsByPhone;
+  /// The creator's opening contribution to the group fund, in paisa.
+  final int myContributionPaisa;
 }
 
 /// Result of leaving a group, so the UI can explain what happened.
@@ -78,12 +80,8 @@ abstract interface class GroupRepository {
   /// Join requests made by [userId].
   Stream<List<JoinRequest>> watchMyJoinRequests(String userId);
 
-  Future<JoinRequest> requestToJoin({
-    required String userId,
-    required String code,
-    required String name,
-    required String phone,
-  });
+  /// The request carries the requester's own email and phone.
+  Future<JoinRequest> requestToJoin({required String userId, required String code, required String name});
 
   /// Any active member can approve or decline a join request.
   Future<void> approveJoinRequest({required String actorUserId, required String requestId});

@@ -8,9 +8,10 @@ class JoinRequest {
     required this.groupName,
     required this.userId,
     required this.name,
-    required this.phone,
     required this.status,
     required this.requestedAt,
+    this.email,
+    this.phone,
     this.decidedByUserId,
     this.decidedAt,
   });
@@ -23,7 +24,8 @@ class JoinRequest {
   final String groupName;
   final String userId;
   final String name;
-  final String phone;
+  final String? email;
+  final String? phone;
   final JoinRequestStatus status;
   final DateTime requestedAt;
   final String? decidedByUserId;
@@ -38,6 +40,7 @@ class JoinRequest {
       groupName: groupName,
       userId: userId,
       name: name,
+      email: email,
       phone: phone,
       status: status,
       requestedAt: requestedAt,

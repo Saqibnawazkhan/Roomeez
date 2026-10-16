@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/providers.dart';
 import '../../../app/theme/app_theme.dart';
 import '../../../core/errors/app_exception.dart';
+import '../../../core/utils/phone.dart';
 import '../../../core/widgets/common.dart';
 import '../../groups/group_providers.dart';
 
@@ -17,17 +19,21 @@ class ProfileSetupScreen extends ConsumerStatefulWidget {
 class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _name;
+  late final TextEditingController _phone;
   bool _busy = false;
 
   @override
   void initState() {
     super.initState();
-    _name = TextEditingController(text: ref.read(currentUserProvider)?.name ?? '');
+    final user = ref.read(currentUserProvider);
+    _name = TextEditingController(text: user?.name ?? '');
+    _phone = TextEditingController(text: user?.phone == null ? '' : PhoneNumber.format(user!.phone!));
   }
 
   @override
   void dispose() {
     _name.dispose();
+    _phone.dispose();
     super.dispose();
   }
 
@@ -36,7 +42,9 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     setState(() => _busy = true);
     try {
       // On success the router moves on to Home.
-      await ref.read(authRepositoryProvider).updateProfile(name: _name.text);
+      await ref
+          .read(authRepositoryProvider)
+          .updateProfile(name: _name.text, phone: PhoneNumber.normalizeOptional(_phone.text));
     } catch (error) {
       if (mounted) showAppSnack(context, describeError(error), isError: true);
     } finally {
@@ -52,7 +60,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         actions: [
           TextButton(
             onPressed: () => ref.read(authRepositoryProvider).signOut(),
-            child: const Text('Use another number'),
+            child: const Text('Use another account'),
           ),
         ],
       ),
@@ -84,9 +92,20 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                 textCapitalization: TextCapitalization.words,
                 decoration: const InputDecoration(labelText: 'Full name', prefixIcon: Icon(Icons.person_outline)),
                 validator: (value) => (value ?? '').trim().length < 2 ? 'Enter your full name' : null,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _phone,
+                keyboardType: TextInputType.phone,
+                inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9+\s-]'))],
+                decoration: const InputDecoration(
+                  labelText: 'Mobile number (optional)',
+                  hintText: '0300 1234567',
+                  prefixIcon: Icon(Icons.phone_iphone),
+                ),
+                validator: PhoneNumber.optionalFieldError,
                 onFieldSubmitted: (_) => _save(),
               ),
-
               const SizedBox(height: 28),
               BusyButton(label: 'Continue', busy: _busy, onPressed: _save),
             ],

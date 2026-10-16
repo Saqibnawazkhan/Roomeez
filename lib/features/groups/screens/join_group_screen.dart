@@ -7,7 +7,6 @@ import '../../../app/providers.dart';
 import '../../../app/routes.dart';
 import '../../../app/theme/app_theme.dart';
 import '../../../core/errors/app_exception.dart';
-import '../../../core/utils/phone.dart';
 import '../../../core/widgets/common.dart';
 import '../../../data/models/models.dart';
 import '../../../data/services/group_code_generator.dart';
@@ -22,7 +21,6 @@ class JoinGroupScreen extends ConsumerStatefulWidget {
 class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
   final _code = TextEditingController();
   final _name = TextEditingController();
-  final _phone = TextEditingController();
   GroupPreview? _preview;
   bool _busy = false;
 
@@ -31,14 +29,12 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
     super.initState();
     final user = ref.read(currentUserProvider);
     _name.text = user?.name ?? '';
-    _phone.text = user == null ? '' : PhoneNumber.format(user.phone);
   }
 
   @override
   void dispose() {
     _code.dispose();
     _name.dispose();
-    _phone.dispose();
     super.dispose();
   }
 
@@ -71,17 +67,16 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
 
   Future<void> _request() async {
     final user = ref.read(currentUserProvider);
-    final phone = PhoneNumber.normalize(_phone.text);
     if (user == null) return;
-    if (_name.text.trim().length < 2 || phone == null) {
-      showAppSnack(context, 'Enter your name and a valid mobile number.', isError: true);
+    if (_name.text.trim().length < 2) {
+      showAppSnack(context, 'Enter your name.', isError: true);
       return;
     }
     setState(() => _busy = true);
     try {
       final request = await ref
           .read(groupRepositoryProvider)
-          .requestToJoin(userId: user.id, code: _code.text, name: _name.text, phone: phone);
+          .requestToJoin(userId: user.id, code: _code.text, name: _name.text);
       if (!mounted) return;
       context.pushReplacement(Routes.joinStatus(request.id));
     } catch (error) {
@@ -154,17 +149,11 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
             ),
             const SizedBox(height: 12),
             const InfoBanner(icon: Icons.lock_outline, message: 'A member will need to approve you.'),
-            const SectionHeader('Your details'),
+            const SizedBox(height: 16),
             TextField(
               controller: _name,
               textCapitalization: TextCapitalization.words,
               decoration: const InputDecoration(labelText: 'Your name', prefixIcon: Icon(Icons.person_outline)),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _phone,
-              keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(labelText: 'Mobile number', prefixIcon: Icon(Icons.phone_iphone)),
             ),
             const SizedBox(height: 20),
             BusyButton(label: 'Send join request', busy: _busy, onPressed: _request),

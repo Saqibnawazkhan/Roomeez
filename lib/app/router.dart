@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/utils/dates.dart';
-import '../features/auth/screens/phone_entry_screen.dart';
+import '../features/auth/screens/email_entry_screen.dart';
 import '../features/auth/screens/profile_setup_screen.dart';
 import '../features/auth/screens/verify_code_screen.dart';
 import '../features/auth/screens/welcome_screen.dart';
@@ -25,7 +25,7 @@ import '../features/reports/screens/report_preview_screen.dart';
 import 'providers.dart';
 import 'routes.dart';
 
-const _signedOutRoutes = {Routes.welcome, Routes.signUp, Routes.logIn, '/verify'};
+const _signedOutRoutes = {Routes.welcome, Routes.email, '/verify'};
 
 final routerProvider = Provider<GoRouter>((ref) {
   final auth = ref.watch(authRepositoryProvider);
@@ -51,14 +51,10 @@ final routerProvider = Provider<GoRouter>((ref) {
     },
     routes: [
       GoRoute(path: Routes.welcome, builder: (context, state) => const WelcomeScreen()),
-      GoRoute(path: Routes.signUp, builder: (context, state) => const PhoneEntryScreen(isSignUp: true)),
-      GoRoute(path: Routes.logIn, builder: (context, state) => const PhoneEntryScreen(isSignUp: false)),
+      GoRoute(path: Routes.email, builder: (context, state) => const EmailEntryScreen()),
       GoRoute(
         path: '/verify',
-        builder: (context, state) => VerifyCodeScreen(
-          phone: state.uri.queryParameters['phone'] ?? '',
-          isSignUp: state.uri.queryParameters['mode'] == 'signup',
-        ),
+        builder: (context, state) => VerifyCodeScreen(email: state.uri.queryParameters['email'] ?? ''),
       ),
       GoRoute(path: Routes.profileSetup, builder: (context, state) => const ProfileSetupScreen()),
       GoRoute(

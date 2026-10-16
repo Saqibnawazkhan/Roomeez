@@ -65,8 +65,13 @@ async function expectError(authId, sql, params, code) {
   throw new Error(`expected ${code}, but it succeeded`);
 }
 
-async function signUp(phoneDigits) {
-  const { rows } = await db.query('insert into auth.users (phone) values ($1) returning id', [phoneDigits]);
+/** A sign-in with Google or an email code: the email is verified. */
+async function signUp(email, fullName = null) {
+  const meta = fullName ? { full_name: fullName } : {};
+  const { rows } = await db.query(
+    'insert into auth.users (email, raw_user_meta_data) values ($1, $2) returning id',
+    [email, JSON.stringify(meta)],
+  );
   return rows[0].id;
 }
 
@@ -81,7 +86,12 @@ async function scalar(authId, sql, params = []) {
 
 await db.exec(`
   create schema auth;
-  create table auth.users (id uuid primary key default gen_random_uuid(), phone text unique);
+  create table auth.users (
+    id uuid primary key default gen_random_uuid(),
+    email text unique,
+    phone text unique,
+    raw_user_meta_data jsonb not null default '{}'
+  );
   create function auth.uid() returns uuid language sql stable as
     $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
   create role anon nologin;
@@ -102,9 +112,9 @@ const daysAgo = (n) => {
 };
 
 // Ali creates a group with Hamza (no account yet) and a fund.
-const ali = await signUp('923001234567');
-const usman = await signUp('923331234567');
-const zain = await signUp('923111234567');
+const ali = await signUp('Ali.Raza@Gmail.com', 'Ali Raza');
+const usman = await signUp('usman@example.com');
+const zain = await signUp('zain@example.com');
 await as(ali, `select public.update_my_profile('Ali Raza')`);
 await as(usman, `select public.update_my_profile('Usman Tariq')`);
 await as(zain, `select public.update_my_profile('Zain Abbas')`);
@@ -115,13 +125,10 @@ const groupId = await scalar(ali, `select public.create_group($1, $2, $3, $4)`, 
   'Gulberg Apartment 4B',
   'Shared flat',
   JSON.stringify([
-    { name: 'Hamza Khan', phone: '+923211234567' },
-    { name: 'Usman Tariq', phone: '+923331234567' },
+    { name: 'Hamza Khan', email: 'HAMZA@example.com', phone: '+923211234567', contribution_paisa: 500000 },
+    { name: 'Usman Tariq', email: 'usman@example.com' },
   ]),
-  JSON.stringify([
-    { phone: '+923001234567', amount_paisa: 500000 },
-    { phone: '+923211234567', amount_paisa: 500000 },
-  ]),
+  500000,
 ]);
 
 console.log('Roomeez database rules');
@@ -135,15 +142,30 @@ await test('creator is the manager; members and contributions are recorded', asy
   assert(/^[A-Z2-9]{6}$/.test(code), `bad code ${code}`);
 });
 
-await test('a person added by phone is linked when they sign up', async () => {
-  const hamza = await signUp('923211234567');
+await test('a person added by email is linked when they sign in with that email', async () => {
+  const hamza = await signUp('hamza@example.com');
   const groups = await as(hamza, 'select name from groups');
   assertEqual(groups.map((g) => g.name), ['Gulberg Apartment 4B'], 'groups visible to Hamza');
-  const profile = await as(hamza, 'select name, has_completed_profile from profiles');
-  assertEqual(profile, [{ name: 'Hamza Khan', has_completed_profile: false }], 'placeholder profile');
+  const profile = await as(hamza, 'select name, email, phone, has_completed_profile from profiles');
+  assertEqual(profile, [{ name: 'Hamza Khan', email: 'hamza@example.com', phone: '+923211234567', has_completed_profile: false }], 'placeholder profile');
 });
 
-const hamza = (await db.query(`select id from auth.users where phone = '923211234567'`)).rows[0].id;
+await test('a Google name pre-fills the profile; emails are stored in lower case', async () => {
+  const profile = await as(ali, 'select name, email from profiles');
+  assertEqual(profile, [{ name: 'Ali Raza', email: 'ali.raza@gmail.com' }], 'Ali profile');
+});
+
+await test('phone numbers are optional and never link accounts', async () => {
+  // Someone signing in with a phone (old flow) gets a fresh profile, not Hamza's.
+  const { rows } = await db.query(`insert into auth.users (phone) values ('923211234567') returning id`);
+  assertEqual(await as(rows[0].id, 'select name from groups'), [], 'phone sign-in sees nothing');
+  await as(zain, `select public.update_my_profile('Zain Abbas', '+923111234567')`);
+  await as(zain, `select public.update_my_profile('Zain Abbas', null)`);
+  assertEqual(await scalar(zain, 'select phone from profiles'), null, 'phone cleared');
+  await expectError(zain, `select public.update_my_profile('Zain Abbas', '12')`, [], 'RZ422');
+});
+
+const hamza = (await db.query(`select id from auth.users where email = 'hamza@example.com'`)).rows[0].id;
 const hamzaProfile = await scalar(hamza, 'select public.current_profile_id()');
 const split = [aliProfile, hamzaProfile, usmanProfile];
 const expense = (overrides = {}) =>
@@ -253,7 +275,7 @@ await test('someone who joined later cannot share an earlier expense', async () 
 });
 
 await test('any member can add a member; only the manager removes', async () => {
-  const memberId = await scalar(usman, 'select public.add_member($1, $2, $3, $4)', [groupId, 'Bilal Ahmed', '+923451234567', today]);
+  const memberId = await scalar(usman, 'select public.add_member($1, $2, $3, $4, $5)', [groupId, 'Bilal Ahmed', 'bilal@example.com', '+923451234567', today]);
   await expectError(hamza, 'select public.remove_member($1, $2)', [groupId, memberId], 'RZ403');
   await as(ali, 'select public.remove_member($1, $2)', [groupId, memberId]);
   const row = (await as(ali, 'select status, end_date is not null as ended from group_members where id = $1', [memberId]))[0];
@@ -289,6 +311,14 @@ await test('contributions: active members only, positive amounts', async () => {
   await as(zain, 'select public.add_contribution($1, $2, $3, $4, $5)', [groupId, zainProfile, 300000, today, 'Joining']);
   await expectError(zain, 'select public.add_contribution($1, $2, $3, $4, $5)', [groupId, zainProfile, 0, today, null], 'RZ422');
   await expectError(zain, 'select public.add_contribution($1, $2, $3, $4, $5)', [groupId, aliProfile, 100, today, null], 'RZ422');
+});
+
+await test('offline members (no email) can share expenses but never get linked', async () => {
+  const memberId = await scalar(hamza, 'select public.add_member($1, $2, $3, $4, $5)', [groupId, 'Danish Iqbal', null, null, today]);
+  const danish = await scalar(hamza, 'select profile_id from group_members where id = $1', [memberId]);
+  const id = await scalar(hamza, 'select public.add_expense($1, $2)', [groupId, expense({ paid_by: danish, split_among: [hamzaProfile, danish] })]);
+  assertEqual(await scalar(hamza, 'select paid_by from expenses where id = $1', [id]), danish, 'paid by offline member');
+  await expectError(hamza, 'select public.add_member($1, $2, $3, $4, $5)', [groupId, 'Bad Email', 'not-an-email', null, today], 'RZ422');
 });
 
 await test('signed-out callers are rejected', async () => {

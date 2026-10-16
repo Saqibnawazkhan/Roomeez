@@ -11,5 +11,9 @@ abstract final class AppConfig {
     defaultValue: String.fromEnvironment('SUPABASE_ANON_KEY'),
   );
 
+  /// The *Web* OAuth client ID from Google Cloud. Google issues the sign-in
+  /// token for this client, and Supabase checks it. Empty = no Google button.
+  static const String googleWebClientId = String.fromEnvironment('GOOGLE_WEB_CLIENT_ID');
+
   static bool get useSupabase => supabaseUrl.isNotEmpty && supabaseKey.isNotEmpty;
 }

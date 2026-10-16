@@ -5,14 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/providers.dart';
 import '../../../app/theme/app_theme.dart';
 import '../../../core/errors/app_exception.dart';
-import '../../../core/utils/phone.dart';
 import '../../../core/widgets/common.dart';
 
 class VerifyCodeScreen extends ConsumerStatefulWidget {
-  const VerifyCodeScreen({super.key, required this.phone, required this.isSignUp});
+  const VerifyCodeScreen({super.key, required this.email});
 
-  final String phone;
-  final bool isSignUp;
+  final String email;
 
   @override
   ConsumerState<VerifyCodeScreen> createState() => _VerifyCodeScreenState();
@@ -21,6 +19,7 @@ class VerifyCodeScreen extends ConsumerStatefulWidget {
 class _VerifyCodeScreenState extends ConsumerState<VerifyCodeScreen> {
   final _code = TextEditingController();
   bool _busy = false;
+  bool _resending = false;
 
   @override
   void dispose() {
@@ -29,20 +28,31 @@ class _VerifyCodeScreenState extends ConsumerState<VerifyCodeScreen> {
   }
 
   Future<void> _verify() async {
-    if (_code.text.trim().length != 6) {
-      showAppSnack(context, 'Enter the 6-digit code.', isError: true);
+    // Supabase email codes are 6 digits by default (up to 8 if configured).
+    if (_code.text.trim().length < 6) {
+      showAppSnack(context, 'Enter the code from the email.', isError: true);
       return;
     }
     setState(() => _busy = true);
     try {
       // On success the router redirects to profile setup or home.
-      await ref
-          .read(authRepositoryProvider)
-          .verifyCode(phone: widget.phone, code: _code.text, isSignUp: widget.isSignUp);
+      await ref.read(authRepositoryProvider).verifyEmailCode(email: widget.email, code: _code.text);
     } catch (error) {
       if (mounted) showAppSnack(context, describeError(error), isError: true);
     } finally {
       if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _resend() async {
+    setState(() => _resending = true);
+    try {
+      await ref.read(authRepositoryProvider).sendEmailCode(widget.email);
+      if (mounted) showAppSnack(context, 'New code sent');
+    } catch (error) {
+      if (mounted) showAppSnack(context, describeError(error), isError: true);
+    } finally {
+      if (mounted) setState(() => _resending = false);
     }
   }
 
@@ -55,10 +65,10 @@ class _VerifyCodeScreenState extends ConsumerState<VerifyCodeScreen> {
         child: ListView(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           children: [
-            Text('Enter the code', style: context.text.headlineSmall?.copyWith(fontWeight: FontWeight.w800)),
+            Text('Check your email', style: context.text.headlineSmall?.copyWith(fontWeight: FontWeight.w800)),
             const SizedBox(height: 8),
             Text(
-              'Sent to ${PhoneNumber.format(widget.phone)}',
+              'Enter the code we sent to ${widget.email}',
               style: context.text.bodyLarge?.copyWith(color: context.appColors.muted),
             ),
             const SizedBox(height: 16),
@@ -78,17 +88,25 @@ class _VerifyCodeScreenState extends ConsumerState<VerifyCodeScreen> {
               autofocus: true,
               keyboardType: TextInputType.number,
               textAlign: TextAlign.center,
-              maxLength: 6,
+              maxLength: 8,
+              autofillHints: const [AutofillHints.oneTimeCode],
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              style: context.text.headlineSmall?.copyWith(letterSpacing: 12, fontWeight: FontWeight.w700),
+              style: context.text.headlineSmall?.copyWith(letterSpacing: 10, fontWeight: FontWeight.w700),
               decoration: const InputDecoration(counterText: '', hintText: '------'),
               onSubmitted: (_) => _verify(),
             ),
             const SizedBox(height: 24),
             BusyButton(label: 'Verify', busy: _busy, onPressed: _verify),
             const SizedBox(height: 8),
-            Center(
-              child: TextButton(onPressed: () => Navigator.of(context).maybePop(), child: const Text('Change number')),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                TextButton(
+                  onPressed: _resending ? null : _resend,
+                  child: Text(_resending ? 'Sending…' : 'Resend code'),
+                ),
+                TextButton(onPressed: () => Navigator.of(context).maybePop(), child: const Text('Change email')),
+              ],
             ),
           ],
         ),

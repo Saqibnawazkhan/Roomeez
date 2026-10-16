@@ -14,6 +14,17 @@ abstract final class PhoneNumber {
     return null;
   }
 
+  /// For optional phone fields: an empty value is fine (`null`), otherwise it
+  /// must be a valid number.
+  static String? optionalFieldError(String? input) {
+    final text = (input ?? '').trim();
+    if (text.isEmpty || normalize(text) != null) return null;
+    return 'Enter a valid number, e.g. 0300 1234567';
+  }
+
+  /// The normalized number, or `null` when the optional field is empty.
+  static String? normalizeOptional(String input) => input.trim().isEmpty ? null : normalize(input);
+
   /// Formats a normalized number for display: `+92 300 1234567`.
   static String format(String normalized) {
     if (!RegExp(r'^\+923\d{9}$').hasMatch(normalized)) return normalized;

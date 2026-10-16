@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../../../app/providers.dart';
 import '../../../app/routes.dart';
 import '../../../app/theme/app_theme.dart';
-import '../../../core/utils/phone.dart';
 import '../../../core/widgets/common.dart';
 
 /// PROTOTYPE ONLY. Lets testers switch between sample accounts to check
@@ -33,7 +32,7 @@ Future<void> showSampleUserSheet(BuildContext context, WidgetRef ref) {
                 contentPadding: EdgeInsets.zero,
                 leading: MemberAvatar(name: user.name),
                 title: Text(user.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: Text(PhoneNumber.format(user.phone)),
+                subtitle: Text(user.email ?? ''),
                 trailing: user.id == currentId ? const Pill('Current') : const Icon(Icons.chevron_right),
                 onTap: () async {
                   Navigator.of(sheetContext).pop();

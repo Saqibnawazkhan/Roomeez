@@ -11,7 +11,7 @@ The product specification is in [docs/SPEC.md](docs/SPEC.md).
 
 - **Demo mode** (default): sample data in memory on the phone, resets on
   restart, sign-in code is always `123456`. Good for trying the UI.
-- **Supabase mode:** real accounts (phone + SMS code), data saved in a
+- **Supabase mode:** real accounts (Google or an emailed code), data saved in a
   Supabase Postgres database, rules enforced by the database, and live
   updates between phones.
 
@@ -38,20 +38,26 @@ cd supabase/tests && npm install && npm test             # database rules
 
 1. **Create a project** at [supabase.com](https://supabase.com). The Mumbai
    (South Asia) region is closest to Pakistan.
-2. **Create the database.** Either paste
-   `supabase/migrations/20261016000000_init.sql` into the dashboard's
-   *SQL Editor* and run it, or use the CLI:
+2. **Create the database.** Run every file in `supabase/migrations/`, in
+   name order, in the dashboard's *SQL Editor*, or use the CLI:
    ```bash
    supabase login
    supabase link --project-ref YOUR-PROJECT-REF
    supabase db push
    ```
-3. **Turn on phone sign-in:** *Authentication → Sign In / Providers → Phone*.
-   Enable it and connect an SMS provider (e.g. Twilio). While testing, add
-   *test phone numbers* with fixed codes there so no SMS is sent or charged.
+3. **Turn on sign-in:**
+   - *Google:* create a Web and an Android OAuth client in Google Cloud
+     (Android: package `com.roomeez.roomeez` + your signing key's SHA-1),
+     then in *Authentication → Sign In / Providers → Google* enable it and
+     add the Web client ID and secret.
+   - *Email code:* in *Authentication → Emails*, make the *Magic Link* and
+     *Confirm signup* templates show `{{ .Token }}`. Supabase's built-in
+     email only reaches your own team's addresses, so connect a free SMTP
+     service (e.g. Resend) under *Authentication → Emails → SMTP Settings*.
 4. **Add your keys:** copy `supabase.env.example.json` to
    `supabase.env.json` (it is git-ignored) and fill in the *Project URL* and
-   *Publishable key* from *Project Settings → API Keys*. The publishable key
+   *Publishable key* from *Project Settings → API Keys*, and the Google
+   *Web client ID* as `GOOGLE_WEB_CLIENT_ID`. The publishable key
    is meant to be in the app; the database's row-level security decides what
    each user can see and do. Never put the secret / service-role key in the
    app.
@@ -76,7 +82,7 @@ function that checks who is calling:
 | Only the manager removes members or changes the join code; any member adds members or approves join requests | `remove_member`, `regenerate_group_code`, `add_member`, `decide_join_request` |
 | Expenses are shared only by people who were members on that date | `prepare_expense` |
 | Totals are computed on the server from the items (integer paisa) | `prepare_expense` |
-| Someone added by phone is linked to their account when they sign up | `on_auth_user_created` trigger |
+| Someone added by email joins the group when they sign in with that email; phone numbers are optional and never link accounts | `on_auth_user_created` trigger |
 
 The same rules are mirrored in the app (`PermissionPolicy`,
 `ExpenseValidator`) so screens only show actions that will succeed.
@@ -88,12 +94,16 @@ The same rules are mirrored in the app (`PermissionPolicy`,
 On the welcome screen, tap **Try the demo** and pick an account. Switch any
 time from **Profile → Switch demo user**.
 
-| Demo user | Phone | Useful for |
+| Demo user | Email | Useful for |
 |---|---|---|
-| Ali Raza | 0300 1234567 | Manager of *Gulberg Apartment 4B*; regular member of *Hostel Room 12* |
-| Hamza Khan | 0321 1234567 | Manager of *Hostel Room 12*; added several apartment expenses |
-| Usman Tariq | 0333 1234567 | Regular member |
-| Bilal Ahmed | 0345 1234567 | Joined the apartment 6 days ago, so he isn't part of older expenses |
+| Ali Raza | ali.raza@gmail.com | Manager of *Gulberg Apartment 4B*; regular member of *Hostel Room 12* |
+| Hamza Khan | hamza.khan@gmail.com | Manager of *Hostel Room 12*; added several apartment expenses |
+| Usman Tariq | usman.tariq@gmail.com | Regular member |
+| Bilal Ahmed | bilal.ahmed@gmail.com | Joined the apartment 6 days ago, so he isn't part of older expenses |
+
+You can also use *Continue with email* with any address (code `123456`):
+`danish.iqbal@gmail.com` shows how someone added by email joins their group
+when they first sign in.
 
 Things to try: open *Electricity bill (LESCO)* as Hamza (editable) and as Ali
 (read-only); void one of your own expenses from its ⋮ menu; approve Zain's
@@ -128,9 +138,9 @@ supabase_flutter.
 
 ## Roadmap
 
-- **Phase 3: Real SMS and notifications.** Live SMS codes (Twilio, or a
-  local Pakistani gateway / WhatsApp codes), push notifications for join
-  requests, new and changed expenses.
+- **Phase 3: Sign-in and notifications.** Google and email-code sign-in
+  (done; phone numbers are optional contact details), then push
+  notifications for join requests, new and changed expenses.
 - **Phase 4: New UI.** Redesign based on the owner's design references.
 - **Phase 5: Urdu and release.** Urdu translation (and a Unicode font for
   Urdu in PDFs), Play Store and App Store publishing.

@@ -21,10 +21,11 @@ void seedSampleData(MockStore store) {
     return value.isAfter(now) ? now : value;
   }
 
-  void user(String id, String name, String phone, {bool registered = true}) {
+  void user(String id, String name, String email, {String? phone, bool registered = true}) {
     store.users[id] = AppUser(
       id: id,
       name: name,
+      email: email,
       phone: phone,
       isRegistered: registered,
       hasCompletedProfile: registered,
@@ -32,13 +33,13 @@ void seedSampleData(MockStore store) {
     );
   }
 
-  user('u_ali', 'Ali Raza', '+923001234567');
-  user('u_hamza', 'Hamza Khan', '+923211234567');
-  user('u_usman', 'Usman Tariq', '+923331234567');
-  user('u_bilal', 'Bilal Ahmed', '+923451234567');
-  user('u_fahad', 'Fahad Malik', '+923061234567');
-  user('u_zain', 'Zain Abbas', '+923111234567');
-  user('u_danish', 'Danish Iqbal', '+923071234567', registered: false);
+  user('u_ali', 'Ali Raza', 'ali.raza@gmail.com', phone: '+923001234567');
+  user('u_hamza', 'Hamza Khan', 'hamza.khan@gmail.com', phone: '+923211234567');
+  user('u_usman', 'Usman Tariq', 'usman.tariq@gmail.com');
+  user('u_bilal', 'Bilal Ahmed', 'bilal.ahmed@gmail.com', phone: '+923451234567');
+  user('u_fahad', 'Fahad Malik', 'fahad.malik@gmail.com');
+  user('u_zain', 'Zain Abbas', 'zain.abbas@gmail.com');
+  user('u_danish', 'Danish Iqbal', 'danish.iqbal@gmail.com', registered: false);
 
   void member(
     String groupId,
@@ -56,6 +57,7 @@ void seedSampleData(MockStore store) {
       groupId: groupId,
       userId: userId,
       displayName: u.name,
+      email: u.email,
       phone: u.phone,
       role: role,
       status: status,
@@ -377,7 +379,7 @@ void seedSampleData(MockStore store) {
     groupName: 'Gulberg Apartment 4B',
     userId: 'u_zain',
     name: 'Zain Abbas',
-    phone: '+923111234567',
+    email: 'zain.abbas@gmail.com',
     status: JoinRequestStatus.pending,
     requestedAt: at(0, 8, 30),
   );
