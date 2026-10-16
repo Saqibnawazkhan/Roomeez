@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/routes.dart';
-import '../../../app/theme/app_theme.dart';
+import '../../../core/neu/neu.dart';
 import '../../../core/utils/dates.dart';
 import '../../../core/widgets/category_icon.dart';
 import '../../../core/widgets/common.dart';
 import '../../../data/models/group_snapshot.dart';
 import '../../../data/models/models.dart';
 
-/// One expense in a list. Tapping opens the details. There are deliberately
-/// no swipe actions on expense rows.
+/// One expense as a raised pill (like the player rows in the reference).
+/// Tapping opens the details; there are deliberately no swipe actions.
 class ExpenseTile extends StatelessWidget {
   const ExpenseTile({super.key, required this.expense, required this.snapshot, this.showDate = false});
 
@@ -21,7 +21,7 @@ class ExpenseTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final e = expense;
-    final muted = context.appColors.muted;
+    final palette = NeuPalette.of(context);
     final addedBy = snapshot.nameOf(e.createdByUserId).split(' ').first;
     final String paid;
     if (e.paymentSource == PaymentSource.groupFund) {
@@ -36,14 +36,17 @@ class ExpenseTile extends StatelessWidget {
       if (e.isItemized) '${e.items.length} ${e.items.length == 1 ? 'item' : 'items'}',
     ].join(' · ');
 
-    return InkWell(
-      onTap: () => context.push(Routes.expense(e.groupId, e.id)),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: NeuPressable(
+        onTap: () => context.push(Routes.expense(e.groupId, e.id)),
+        radius: 30,
+        depth: 5,
+        padding: const EdgeInsets.fromLTRB(10, 10, 18, 10),
         child: Row(
           children: [
-            CategoryIcon(e.category, muted: e.isVoided),
-            const SizedBox(width: 12),
+            CategoryIcon(e.category, size: 46, muted: e.isVoided),
+            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -55,22 +58,22 @@ class ExpenseTile extends StatelessWidget {
                           e.title,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: context.text.titleSmall?.copyWith(
+                          style: TextStyle(
+                            fontSize: 15,
                             fontWeight: FontWeight.w600,
                             decoration: e.isVoided ? TextDecoration.lineThrough : null,
-                            color: e.isVoided ? muted : null,
+                            color: e.isVoided ? palette.muted : palette.text,
                           ),
                         ),
                       ),
-                      if (e.isVoided) ...[const SizedBox(width: 6), Pill('Voided', color: muted)],
+                      if (e.isVoided) ...[const SizedBox(width: 6), Pill('Voided', color: palette.muted)],
                     ],
                   ),
-                  const SizedBox(height: 2),
                   Text(
                     subtitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: context.text.bodySmall?.copyWith(color: muted),
+                    style: TextStyle(fontSize: 12, color: palette.muted),
                   ),
                 ],
               ),
@@ -79,7 +82,11 @@ class ExpenseTile extends StatelessWidget {
             AmountText(
               e.totalPaisa,
               strikethrough: e.isVoided,
-              style: context.text.titleSmall?.copyWith(fontWeight: FontWeight.w700, color: e.isVoided ? muted : null),
+              style: TextStyle(
+                fontSize: 14.5,
+                fontWeight: FontWeight.w600,
+                color: e.isVoided ? palette.muted : palette.text,
+              ),
             ),
           ],
         ),

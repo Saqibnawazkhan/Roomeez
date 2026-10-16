@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../app/theme/app_theme.dart';
+import '../../../core/neu/neu.dart';
 import '../../../core/widgets/common.dart';
 import '../../../data/models/models.dart';
 
@@ -55,30 +56,32 @@ class _GroupCodeCardState extends State<GroupCodeCard> {
           SelectableText(
             group.code,
             style: context.text.displaySmall?.copyWith(
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w600,
               letterSpacing: 6,
               color: context.colors.primary,
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 18),
           Row(
             children: [
               Expanded(
-                child: OutlinedButton.icon(
+                child: NeuButton(
+                  label: _copied ? 'Copied' : 'Copy',
+                  icon: _copied ? Icons.check_rounded : Icons.copy_rounded,
+                  primary: false,
+                  height: 50,
                   onPressed: _copy,
-                  icon: Icon(_copied ? Icons.check_rounded : Icons.copy_rounded, size: 18),
-                  label: Text(_copied ? 'Copied' : 'Copy'),
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 16),
               Expanded(
-                child: FilledButton.tonalIcon(
-                  style: FilledButton.styleFrom(minimumSize: const Size(64, 52)),
+                child: NeuButton(
+                  label: 'Share',
+                  icon: Icons.ios_share_rounded,
+                  height: 50,
                   onPressed: () => SharePlus.instance.share(
                     ShareParams(text: GroupCodeCard.shareText(group), subject: 'Join ${group.name} on Roomeez'),
                   ),
-                  icon: const Icon(Icons.ios_share_rounded, size: 18),
-                  label: const Text('Share'),
                 ),
               ),
             ],

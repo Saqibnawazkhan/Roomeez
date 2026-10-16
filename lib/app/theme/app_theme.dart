@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../core/neu/neu.dart';
+
 /// Extra semantic colors not covered by [ColorScheme].
 @immutable
 class AppColors extends ThemeExtension<AppColors> {
@@ -27,13 +29,13 @@ class AppColors extends ThemeExtension<AppColors> {
   final Color canvas;
 
   static const AppColors light = AppColors(
-    positive: Color(0xFF15803D),
-    negative: Color(0xFFB42318),
-    fund: Color(0xFF4F46E5),
-    fundContainer: Color(0xFFEEF0FF),
-    onFundContainer: Color(0xFF2E2A85),
-    muted: Color(0xFF667085),
-    canvas: Color(0xFFF5F7F8),
+    positive: Color(0xFF27936A),
+    negative: Color(0xFFD45B55),
+    fund: Color(0xFF6A78E8),
+    fundContainer: Color(0xFFE6EBF1),
+    onFundContainer: Color(0xFF3B4555),
+    muted: Color(0xFF8A95A6),
+    canvas: Color(0xFFE6EBF1),
   );
 
   static const AppColors dark = AppColors(
@@ -90,113 +92,124 @@ extension AppThemeContext on BuildContext {
 }
 
 abstract final class AppTheme {
-  static const Color seed = Color(0xFF0F766E);
+  static const Color seed = Color(0xFF2FAFAD);
 
   static ThemeData light() => _build(Brightness.light);
   static ThemeData dark() => _build(Brightness.dark);
 
+  /// Neumorphic theme: one soft surface color, Poppins, teal accent.
+  /// Shadows come from the widgets in core/neu/neu.dart.
   static ThemeData _build(Brightness brightness) {
     final isDark = brightness == Brightness.dark;
-    final scheme = ColorScheme.fromSeed(seedColor: seed, brightness: brightness);
-    final extra = isDark ? AppColors.dark : AppColors.light;
-    final surface = isDark ? scheme.surfaceContainer : Colors.white;
-    final outline = scheme.outlineVariant.withValues(alpha: isDark ? 0.5 : 0.7);
-    final radius12 = BorderRadius.circular(12);
-    final base = ThemeData(colorScheme: scheme, useMaterial3: true, brightness: brightness);
+    final neu = isDark ? NeuPalette.dark : NeuPalette.light;
+    final extra = (isDark ? AppColors.dark : AppColors.light).copyWith(
+      canvas: neu.base,
+      muted: neu.muted,
+      fundContainer: neu.base,
+    );
+    final scheme = ColorScheme.fromSeed(seedColor: seed, brightness: brightness).copyWith(
+      primary: neu.accent,
+      onPrimary: Colors.white,
+      surface: neu.base,
+      onSurface: neu.text,
+      onSurfaceVariant: neu.muted,
+      surfaceContainerLowest: neu.base,
+      surfaceContainerLow: neu.base,
+      surfaceContainer: neu.base,
+      surfaceContainerHigh: neu.base,
+      surfaceContainerHighest: neu.base,
+      outlineVariant: neu.shade.withValues(alpha: 0.35),
+    );
+    final base = ThemeData(
+      colorScheme: scheme,
+      useMaterial3: true,
+      brightness: brightness,
+      fontFamily: 'Poppins',
+      scaffoldBackgroundColor: neu.base,
+    );
+    final radius = BorderRadius.circular(18);
 
     return base.copyWith(
-      scaffoldBackgroundColor: extra.canvas,
-      extensions: [extra],
+      extensions: [extra, neu],
+      textTheme: base.textTheme.apply(bodyColor: neu.text, displayColor: neu.text),
       appBarTheme: AppBarTheme(
-        backgroundColor: extra.canvas,
+        backgroundColor: neu.base,
+        foregroundColor: neu.text,
         surfaceTintColor: Colors.transparent,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        titleTextStyle: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: scheme.onSurface),
-      ),
-      floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: scheme.primary,
-        foregroundColor: scheme.onPrimary,
+        titleTextStyle: TextStyle(fontFamily: 'Poppins', fontSize: 20, fontWeight: FontWeight.w600, color: neu.text),
       ),
       cardTheme: CardThemeData(
         elevation: 0,
         margin: EdgeInsets.zero,
-        color: surface,
+        color: neu.base,
         surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: outline),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
       ),
+      // Fields are wrapped in NeuTextFormField, which draws the inset.
       inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: surface,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-        border: OutlineInputBorder(
-          borderRadius: radius12,
-          borderSide: BorderSide(color: outline),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: radius12,
-          borderSide: BorderSide(color: outline),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: radius12,
-          borderSide: BorderSide(color: scheme.primary, width: 1.6),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: radius12,
-          borderSide: BorderSide(color: scheme.error),
-        ),
+        border: InputBorder.none,
+        enabledBorder: InputBorder.none,
+        focusedBorder: InputBorder.none,
+        filled: false,
+        labelStyle: TextStyle(color: neu.muted),
+        floatingLabelStyle: TextStyle(color: neu.accent),
+        hintStyle: TextStyle(color: neu.muted.withValues(alpha: 0.7)),
+        prefixIconColor: neu.muted,
+        suffixIconColor: neu.muted,
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          minimumSize: const Size(64, 52),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          backgroundColor: neu.accent,
+          foregroundColor: Colors.white,
+          minimumSize: const Size(64, 50),
+          shape: RoundedRectangleBorder(borderRadius: radius),
+          textStyle: const TextStyle(fontFamily: 'Poppins', fontSize: 15, fontWeight: FontWeight.w600),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          minimumSize: const Size(64, 52),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          side: BorderSide(color: outline),
-          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          foregroundColor: neu.accent,
+          minimumSize: const Size(64, 50),
+          shape: RoundedRectangleBorder(borderRadius: radius),
+          side: BorderSide(color: neu.shade.withValues(alpha: 0.5)),
+          textStyle: const TextStyle(fontFamily: 'Poppins', fontSize: 15, fontWeight: FontWeight.w600),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(textStyle: const TextStyle(fontWeight: FontWeight.w600)),
-      ),
-      chipTheme: base.chipTheme.copyWith(
-        side: BorderSide(color: outline),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-      navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: surface,
-        surfaceTintColor: Colors.transparent,
-        indicatorColor: scheme.primaryContainer,
-        height: 68,
-        labelTextStyle: WidgetStateProperty.resolveWith(
-          (states) => TextStyle(
-            fontSize: 12,
-            fontWeight: states.contains(WidgetState.selected) ? FontWeight.w700 : FontWeight.w500,
-          ),
+        style: TextButton.styleFrom(
+          foregroundColor: neu.accent,
+          textStyle: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600),
         ),
       ),
-      dividerTheme: DividerThemeData(color: outline, space: 1, thickness: 1),
+      iconTheme: IconThemeData(color: neu.muted),
+      dividerTheme: DividerThemeData(color: neu.shade.withValues(alpha: 0.25), space: 1, thickness: 1),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: radius12),
+        backgroundColor: neu.text,
+        contentTextStyle: TextStyle(fontFamily: 'Poppins', color: neu.base),
+        shape: RoundedRectangleBorder(borderRadius: radius),
       ),
       bottomSheetTheme: BottomSheetThemeData(
         showDragHandle: true,
-        backgroundColor: isDark ? scheme.surfaceContainerLow : Colors.white,
+        backgroundColor: neu.base,
         surfaceTintColor: Colors.transparent,
+        dragHandleColor: neu.shade,
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(30))),
       ),
       dialogTheme: DialogThemeData(
-        backgroundColor: isDark ? scheme.surfaceContainerHigh : Colors.white,
+        backgroundColor: neu.base,
         surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
       ),
+      popupMenuTheme: PopupMenuThemeData(
+        color: neu.base,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: radius),
+      ),
+      datePickerTheme: DatePickerThemeData(backgroundColor: neu.base, surfaceTintColor: Colors.transparent),
+      progressIndicatorTheme: ProgressIndicatorThemeData(color: neu.accent),
       listTileTheme: const ListTileThemeData(contentPadding: EdgeInsets.symmetric(horizontal: 16)),
     );
   }

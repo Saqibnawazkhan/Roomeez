@@ -4,8 +4,10 @@ import 'package:go_router/go_router.dart';
 import '../../../app/routes.dart';
 import '../../../app/theme/app_theme.dart';
 import '../../../core/utils/dates.dart';
+import '../../../core/neu/neu.dart';
 import '../../../core/widgets/common.dart';
 import '../../../core/widgets/period_selector.dart';
+import '../../../core/widgets/neu_header.dart';
 import '../../../data/models/group_snapshot.dart';
 import '../../../data/services/balance_calculator.dart';
 
@@ -59,7 +61,7 @@ class _ReportsTabState extends State<ReportsTab> {
     );
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Reports')),
+      appBar: const NeuHeader(title: 'Reports', caption: 'PDF for any period', showBack: false),
       body: ListView(
         padding: const EdgeInsets.only(bottom: 32),
         children: [
@@ -117,14 +119,6 @@ class _DateField extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(12),
-      onTap: onTap,
-      child: InputDecorator(
-        decoration: InputDecoration(labelText: label, isDense: true, suffixIcon: const Icon(Icons.event, size: 20)),
-        child: Text(AppDates.day(date), maxLines: 1, overflow: TextOverflow.ellipsis),
-      ),
-    );
-  }
+  Widget build(BuildContext context) =>
+      NeuPickerField(label: label, value: AppDates.day(date), onTap: onTap, icon: Icons.event_rounded);
 }

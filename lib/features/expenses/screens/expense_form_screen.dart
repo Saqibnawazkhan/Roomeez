@@ -4,12 +4,14 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/providers.dart';
 import '../../../app/theme/app_theme.dart';
+import '../../../core/neu/neu.dart';
 import '../../../core/errors/app_exception.dart';
 import '../../../core/utils/dates.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/utils/quantity.dart';
 import '../../../core/widgets/category_icon.dart';
 import '../../../core/widgets/common.dart';
+import '../../../core/widgets/neu_header.dart';
 import '../../../data/models/group_snapshot.dart';
 import '../../../data/models/models.dart';
 import '../../../data/services/balance_calculator.dart';
@@ -215,7 +217,7 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
     final snapshot = ref.watch(groupSnapshotProvider(widget.groupId));
     final allowed = snapshot.hasValue && _allowed(snapshot.requireValue);
     return Scaffold(
-      appBar: AppBar(title: Text(_isEditing ? 'Edit expense' : 'Add expense')),
+      appBar: NeuHeader(title: _isEditing ? 'Edit expense' : 'Add expense'),
       body: snapshot.when(
         loading: () => const LoadingView(),
         error: (error, _) => ErrorView(error: error),
@@ -293,58 +295,46 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
     return Form(
       key: _formKey,
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
         children: [
-          TextFormField(
+          NeuTextFormField(
             controller: _title,
             textCapitalization: TextCapitalization.sentences,
             maxLength: ExpenseValidator.maxTitleLength,
             decoration: const InputDecoration(labelText: 'Title', hintText: 'e.g. Weekly groceries', counterText: ''),
             validator: (v) => (v ?? '').trim().isEmpty ? 'Add a title' : null,
           ),
-          const SizedBox(height: 12),
-          InkWell(
-            borderRadius: BorderRadius.circular(12),
-            onTap: () => _pickDate(s),
-            child: InputDecorator(
-              decoration: const InputDecoration(labelText: 'Date', suffixIcon: Icon(Icons.calendar_today_outlined)),
-              child: Text(AppDates.day(_date)),
-            ),
-          ),
+          const SizedBox(height: 18),
+          NeuPickerField(label: 'Date', value: AppDates.day(_date), onTap: () => _pickDate(s)),
           const SectionHeader('Category'),
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: 14,
+            runSpacing: 14,
             children: [
               for (final c in ExpenseCategory.values)
-                ChoiceChip(
-                  avatar: Icon(c.icon, size: 18, color: _category == c ? context.colors.onSecondaryContainer : c.color),
-                  label: Text(c.label),
+                NeuChip(
+                  leading: Icon(c.icon, size: 18, color: c.color),
+                  label: c.label,
                   selected: _category == c,
-                  showCheckmark: false,
-                  onSelected: (_) => setState(() => _category = c),
+                  onTap: () => setState(() => _category = c),
                 ),
             ],
           ),
           const SectionHeader('Amount'),
-          SegmentedButton<_EntryMode>(
+          NeuSegmented<_EntryMode>(
             segments: const [
-              ButtonSegment(value: _EntryMode.itemized, label: Text('Items'), icon: Icon(Icons.list_alt)),
-              ButtonSegment(
-                value: _EntryMode.singleAmount,
-                label: Text('Total only'),
-                icon: Icon(Icons.payments_outlined),
-              ),
+              (_EntryMode.itemized, 'Items', Icons.list_alt_rounded),
+              (_EntryMode.singleAmount, 'Total only', Icons.payments_outlined),
             ],
-            selected: {_mode},
-            onSelectionChanged: (v) => setState(() => _mode = v.first),
+            value: _mode,
+            onChanged: (v) => setState(() => _mode = v),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 20),
           if (_mode == _EntryMode.itemized) ...[
             for (final (index, row) in _items.indexed)
               Padding(
                 key: ObjectKey(row),
-                padding: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.only(bottom: 20),
                 child: _ItemEditor(
                   row: row,
                   index: index,
@@ -356,13 +346,15 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
                   }),
                 ),
               ),
-            OutlinedButton.icon(
+            NeuButton(
+              label: 'Add item',
+              icon: Icons.add_rounded,
+              primary: false,
+              height: 50,
               onPressed: () => setState(() => _items.add(_ItemRow())),
-              icon: const Icon(Icons.add),
-              label: const Text('Add item'),
             ),
           ] else
-            TextFormField(
+            NeuTextFormField(
               controller: _amount,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               decoration: const InputDecoration(labelText: 'Amount', prefixText: 'PKR '),
@@ -376,36 +368,27 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
               },
             ),
           const SectionHeader('Paid from'),
-          SegmentedButton<PaymentSource>(
+          NeuSegmented<PaymentSource>(
             segments: const [
-              ButtonSegment(value: PaymentSource.personal, label: Text('Own pocket'), icon: Icon(Icons.person_outline)),
-              ButtonSegment(
-                value: PaymentSource.groupFund,
-                label: Text('Group fund'),
-                icon: Icon(Icons.savings_outlined),
-              ),
+              (PaymentSource.personal, 'Own pocket', Icons.person_outline_rounded),
+              (PaymentSource.groupFund, 'Group fund', Icons.savings_outlined),
             ],
-            selected: {_source},
-            onSelectionChanged: (v) => setState(() => _source = v.first),
+            value: _source,
+            onChanged: (v) => setState(() => _source = v),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 18),
           if (_source == PaymentSource.personal) ...[
-            Padding(
-              padding: const EdgeInsets.only(left: 4),
-              child: Text('Paid by', style: context.text.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
-            ),
-            const SizedBox(height: 8),
+            const NeuSectionLabel('Paid by', padding: EdgeInsets.fromLTRB(6, 6, 6, 12)),
             Wrap(
-              spacing: 8,
-              runSpacing: 8,
+              spacing: 14,
+              runSpacing: 14,
               children: [
                 for (final m in eligible)
-                  ChoiceChip(
-                    avatar: MemberAvatar(name: m.displayName, size: 24),
-                    label: Text(m.userId == s.viewerUserId ? 'You' : m.displayName),
+                  NeuChip(
+                    leading: MemberAvatar(name: m.displayName, size: 26),
+                    label: m.userId == s.viewerUserId ? 'You' : m.displayName,
                     selected: _paidBy == m.userId,
-                    showCheckmark: false,
-                    onSelected: (_) => setState(() => _paidBy = m.userId),
+                    onTap: () => setState(() => _paidBy = m.userId),
                   ),
               ],
             ),
@@ -429,19 +412,23 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
             ),
           ),
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: 14,
+            runSpacing: 14,
             children: [
               for (final m in eligible)
-                FilterChip(
-                  label: Text(
-                    '${m.userId == s.viewerUserId ? 'You' : m.displayName.split(' ').first}'
-                    '${_split.contains(m.userId) && _total > 0 ? '  ${Money.format(shares[m.userId] ?? 0)}' : ''}',
+                NeuChip(
+                  leading: Icon(
+                    _split.contains(m.userId) ? Icons.check_circle_rounded : Icons.circle_outlined,
+                    size: 18,
+                    color: _split.contains(m.userId) ? NeuPalette.of(context).accent : NeuPalette.of(context).muted,
                   ),
+                  label:
+                      '${m.userId == s.viewerUserId ? 'You' : m.displayName.split(' ').first}'
+                      '${_split.contains(m.userId) && _total > 0 ? '  ${Money.format(shares[m.userId] ?? 0)}' : ''}',
                   selected: _split.contains(m.userId),
-                  onSelected: (selected) => setState(() {
+                  onTap: () => setState(() {
                     _splitTouched = true;
-                    selected ? _split.add(m.userId) : _split.remove(m.userId);
+                    _split.contains(m.userId) ? _split.remove(m.userId) : _split.add(m.userId);
                   }),
                 ),
             ],
@@ -454,7 +441,7 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
             ),
           ],
           const SizedBox(height: 20),
-          TextFormField(
+          NeuTextFormField(
             controller: _notes,
             textCapitalization: TextCapitalization.sentences,
             maxLines: 3,
@@ -519,7 +506,7 @@ class _ItemEditor extends StatelessWidget {
             padding: const EdgeInsets.only(right: 8),
             child: Column(
               children: [
-                TextFormField(
+                NeuTextFormField(
                   controller: row.name,
                   textCapitalization: TextCapitalization.sentences,
                   decoration: const InputDecoration(labelText: 'Item name', isDense: true),
@@ -532,7 +519,7 @@ class _ItemEditor extends StatelessWidget {
                   children: [
                     Expanded(
                       flex: 2,
-                      child: TextFormField(
+                      child: NeuTextFormField(
                         controller: row.quantity,
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         decoration: const InputDecoration(labelText: 'Qty', isDense: true),
@@ -548,7 +535,7 @@ class _ItemEditor extends StatelessWidget {
                     const Padding(padding: EdgeInsets.fromLTRB(8, 12, 8, 0), child: Text('×')),
                     Expanded(
                       flex: 3,
-                      child: TextFormField(
+                      child: NeuTextFormField(
                         controller: row.price,
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         decoration: const InputDecoration(labelText: 'Price each', prefixText: 'PKR ', isDense: true),
@@ -665,20 +652,23 @@ class _ReviewSheet extends StatelessWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
               child: Row(
                 children: [
                   Expanded(
-                    child: OutlinedButton(
+                    child: NeuButton(
+                      label: 'Keep editing',
+                      primary: false,
+                      height: 52,
                       onPressed: () => Navigator.of(context).pop(false),
-                      child: const Text('Keep editing'),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 16),
                   Expanded(
-                    child: FilledButton(
+                    child: NeuButton(
+                      label: isEditing ? 'Save changes' : 'Save expense',
+                      height: 52,
                       onPressed: () => Navigator.of(context).pop(true),
-                      child: Text(isEditing ? 'Save changes' : 'Save expense'),
                     ),
                   ),
                 ],

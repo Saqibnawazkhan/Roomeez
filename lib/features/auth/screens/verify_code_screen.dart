@@ -4,8 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/providers.dart';
 import '../../../app/theme/app_theme.dart';
+import '../../../core/neu/neu.dart';
 import '../../../core/errors/app_exception.dart';
 import '../../../core/widgets/common.dart';
+import '../../../core/widgets/neu_header.dart';
 
 class VerifyCodeScreen extends ConsumerStatefulWidget {
   const VerifyCodeScreen({super.key, required this.email});
@@ -60,7 +62,7 @@ class _VerifyCodeScreenState extends ConsumerState<VerifyCodeScreen> {
   Widget build(BuildContext context) {
     final demoCode = ref.watch(prototypeToolsProvider)?.demoCode;
     return Scaffold(
-      appBar: AppBar(),
+      appBar: NeuHeader(title: ''),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -83,7 +85,7 @@ class _VerifyCodeScreenState extends ConsumerState<VerifyCodeScreen> {
                 ],
               ),
             const SizedBox(height: 20),
-            TextField(
+            NeuTextField(
               controller: _code,
               autofocus: true,
               keyboardType: TextInputType.number,

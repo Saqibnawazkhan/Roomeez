@@ -6,8 +6,10 @@ import 'package:go_router/go_router.dart';
 import '../../../app/providers.dart';
 import '../../../app/routes.dart';
 import '../../../app/theme/app_theme.dart';
+import '../../../core/neu/neu.dart';
 import '../../../core/errors/app_exception.dart';
 import '../../../core/widgets/common.dart';
+import '../../../core/widgets/neu_header.dart';
 import '../../../data/models/models.dart';
 import '../../../data/services/group_code_generator.dart';
 
@@ -90,16 +92,16 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
   Widget build(BuildContext context) {
     final preview = _preview;
     return Scaffold(
-      appBar: AppBar(title: const Text('Join group')),
+      appBar: NeuHeader(title: 'Join group'),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
         children: [
           Text(
             'Ask a member for the group code.',
             style: context.text.bodyMedium?.copyWith(color: context.appColors.muted),
           ),
           const SizedBox(height: 16),
-          TextField(
+          NeuTextField(
             controller: _code,
             enabled: preview == null,
             textCapitalization: TextCapitalization.characters,
@@ -150,7 +152,7 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
             const SizedBox(height: 12),
             const InfoBanner(icon: Icons.lock_outline, message: 'A member will need to approve you.'),
             const SizedBox(height: 16),
-            TextField(
+            NeuTextField(
               controller: _name,
               textCapitalization: TextCapitalization.words,
               decoration: const InputDecoration(labelText: 'Your name', prefixIcon: Icon(Icons.person_outline)),

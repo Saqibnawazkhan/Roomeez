@@ -6,10 +6,12 @@ import 'package:go_router/go_router.dart';
 import '../../../app/providers.dart';
 import '../../../app/routes.dart';
 import '../../../app/theme/app_theme.dart';
+import '../../../core/neu/neu.dart';
 import '../../../core/errors/app_exception.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/utils/phone.dart';
 import '../../../core/widgets/common.dart';
+import '../../../core/widgets/neu_header.dart';
 import '../../../data/repositories/group_repository.dart';
 
 class CreateGroupScreen extends ConsumerStatefulWidget {
@@ -122,20 +124,20 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
   Widget build(BuildContext context) {
     final user = ref.watch(currentUserProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Create group')),
+      appBar: NeuHeader(title: 'Create group'),
       body: Form(
         key: _formKey,
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
           children: [
-            TextFormField(
+            NeuTextFormField(
               controller: _name,
               textCapitalization: TextCapitalization.words,
               decoration: const InputDecoration(labelText: 'Group name', hintText: 'e.g. My Apartment'),
               validator: (v) => (v ?? '').trim().isEmpty ? 'Enter a group name' : null,
             ),
             const SizedBox(height: 12),
-            TextFormField(
+            NeuTextFormField(
               controller: _description,
               textCapitalization: TextCapitalization.sentences,
               maxLines: 2,
@@ -268,7 +270,7 @@ class _MemberFields extends StatelessWidget {
             padding: const EdgeInsets.only(right: 8),
             child: Column(
               children: [
-                TextFormField(
+                NeuTextFormField(
                   controller: row.name,
                   textCapitalization: TextCapitalization.words,
                   decoration: const InputDecoration(labelText: 'Name', isDense: true),
@@ -276,7 +278,7 @@ class _MemberFields extends StatelessWidget {
                   onChanged: (_) => onChanged(),
                 ),
                 const SizedBox(height: 8),
-                TextFormField(
+                NeuTextFormField(
                   controller: row.email,
                   keyboardType: TextInputType.emailAddress,
                   decoration: const InputDecoration(
@@ -291,7 +293,7 @@ class _MemberFields extends StatelessWidget {
                   onChanged: (_) => onChanged(),
                 ),
                 const SizedBox(height: 8),
-                TextFormField(
+                NeuTextFormField(
                   controller: row.phone,
                   keyboardType: TextInputType.phone,
                   inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9+\s-]'))],
@@ -335,7 +337,7 @@ class _ContributionField extends StatelessWidget {
           const SizedBox(width: 12),
           SizedBox(
             width: 150,
-            child: TextFormField(
+            child: NeuTextFormField(
               controller: controller,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               textAlign: TextAlign.right,

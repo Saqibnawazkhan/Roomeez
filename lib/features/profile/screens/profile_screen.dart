@@ -4,9 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/providers.dart';
 import '../../../app/theme/app_theme.dart';
+import '../../../core/neu/neu.dart';
 import '../../../core/errors/app_exception.dart';
 import '../../../core/utils/phone.dart';
 import '../../../core/widgets/common.dart';
+import '../../../core/widgets/neu_header.dart';
 import '../../../data/models/models.dart';
 import '../../auth/widgets/sample_user_sheet.dart';
 
@@ -33,22 +35,21 @@ class ProfileScreen extends ConsumerWidget {
     if (user == null) return const Scaffold(body: LoadingView());
     final muted = context.text.bodyLarge?.copyWith(color: context.appColors.muted);
     return Scaffold(
-      appBar: AppBar(title: const Text('Profile')),
+      appBar: NeuHeader(title: 'Profile'),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
         children: [
           Center(child: MemberAvatar(name: user.name, size: 84)),
           const SizedBox(height: 12),
           Text(
             user.name,
             textAlign: TextAlign.center,
-            style: context.text.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
+            style: context.text.headlineSmall?.copyWith(fontWeight: FontWeight.w400),
           ),
           if (user.email != null) Text(user.email!, textAlign: TextAlign.center, style: muted),
           if (user.phone != null) Text(PhoneNumber.format(user.phone!), textAlign: TextAlign.center, style: muted),
           const SizedBox(height: 24),
-          Card(
-            clipBehavior: Clip.antiAlias,
+          NeuBox(
             child: ListTile(
               leading: const Icon(Icons.edit_outlined),
               title: const Text('Edit profile'),
@@ -59,8 +60,7 @@ class ProfileScreen extends ConsumerWidget {
           ),
           if (ref.watch(prototypeToolsProvider) != null) ...[
             const SectionHeader('Demo'),
-            Card(
-              clipBehavior: Clip.antiAlias,
+            NeuBox(
               child: ListTile(
                 leading: const Icon(Icons.swap_horiz),
                 title: const Text('Switch demo user'),
@@ -70,10 +70,11 @@ class ProfileScreen extends ConsumerWidget {
             ),
           ],
           const SizedBox(height: 24),
-          OutlinedButton.icon(
+          NeuButton(
+            label: 'Log out',
+            icon: Icons.logout_rounded,
+            primary: false,
             onPressed: () => ref.read(authRepositoryProvider).signOut(),
-            icon: const Icon(Icons.logout),
-            label: const Text('Log out'),
           ),
         ],
       ),
@@ -113,7 +114,7 @@ class _ProfileDialogState extends State<_ProfileDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextFormField(
+            NeuTextFormField(
               controller: _name,
               autofocus: true,
               textCapitalization: TextCapitalization.words,
@@ -121,7 +122,7 @@ class _ProfileDialogState extends State<_ProfileDialog> {
               validator: (v) => (v ?? '').trim().length < 2 ? 'Enter your full name' : null,
             ),
             const SizedBox(height: 12),
-            TextFormField(
+            NeuTextFormField(
               controller: _phone,
               keyboardType: TextInputType.phone,
               inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9+\s-]'))],

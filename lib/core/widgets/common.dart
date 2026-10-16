@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/theme/app_theme.dart';
 import '../errors/app_exception.dart';
+import '../neu/neu.dart';
 import '../utils/money.dart';
 
 /// Amount text with tabular figures so columns of numbers line up.
@@ -50,28 +51,26 @@ class AmountText extends StatelessWidget {
   }
 }
 
-/// A padded card, optionally tappable.
+/// A raised neumorphic card, optionally tappable (it presses in on touch).
 class AppCard extends StatelessWidget {
-  const AppCard({super.key, required this.child, this.onTap, this.padding = const EdgeInsets.all(16), this.color});
+  const AppCard({super.key, required this.child, this.onTap, this.padding = const EdgeInsets.all(18), this.color});
 
   final Widget child;
   final VoidCallback? onTap;
   final EdgeInsetsGeometry padding;
+
+  /// Ignored in the neumorphic design (every surface shares one color);
+  /// kept so existing call sites compile.
   final Color? color;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      color: color,
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(padding: padding, child: child),
-      ),
-    );
+    if (onTap == null) return NeuBox(padding: padding, child: child);
+    return NeuPressable(onTap: onTap, padding: padding, child: child);
   }
 }
 
+/// Small, letter-spaced section title.
 class SectionHeader extends StatelessWidget {
   const SectionHeader(this.title, {super.key, this.trailing, this.padding});
 
@@ -80,22 +79,7 @@ class SectionHeader extends StatelessWidget {
   final EdgeInsetsGeometry? padding;
 
   @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: padding ?? const EdgeInsets.fromLTRB(4, 20, 4, 8),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              title,
-              style: context.text.titleSmall?.copyWith(fontWeight: FontWeight.w700, color: context.colors.onSurface),
-            ),
-          ),
-          ?trailing,
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => NeuSectionLabel(title, trailing: trailing, padding: padding);
 }
 
 /// Initials in a colored circle; color is stable per name.
@@ -107,13 +91,13 @@ class MemberAvatar extends StatelessWidget {
   final bool muted;
 
   static const _palette = [
-    Color(0xFF0F766E),
-    Color(0xFF4F46E5),
-    Color(0xFFB45309),
-    Color(0xFFBE185D),
-    Color(0xFF0369A1),
-    Color(0xFF7C3AED),
-    Color(0xFF15803D),
+    Color(0xFF2FAFAD),
+    Color(0xFF6A78E8),
+    Color(0xFFE08A3C),
+    Color(0xFFD2668E),
+    Color(0xFF3E95CF),
+    Color(0xFF9A6BDB),
+    Color(0xFF3FA36E),
   ];
 
   static String initials(String name) {
@@ -128,14 +112,20 @@ class MemberAvatar extends StatelessWidget {
     final color = muted
         ? context.appColors.muted
         : _palette[name.codeUnits.fold<int>(0, (a, b) => a + b) % _palette.length];
-    return Container(
+    // A raised ring around a soft colored disc with the initials.
+    return NeuBox(
+      circle: true,
+      depth: size / 12,
       width: size,
       height: size,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.14), shape: BoxShape.circle),
-      child: Text(
-        initials(name),
-        style: TextStyle(color: color, fontWeight: FontWeight.w700, fontSize: size * 0.36),
+      padding: EdgeInsets.all(size * 0.09),
+      child: Container(
+        alignment: Alignment.center,
+        decoration: BoxDecoration(color: color.withValues(alpha: 0.13), shape: BoxShape.circle),
+        child: Text(
+          initials(name),
+          style: TextStyle(color: color, fontWeight: FontWeight.w600, fontSize: size * 0.32),
+        ),
       ),
     );
   }
@@ -182,38 +172,27 @@ class InfoBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (Color bg, Color fg, IconData defaultIcon) = switch (tone) {
-      BannerTone.info => (
-        context.colors.primaryContainer.withValues(alpha: 0.5),
-        context.colors.onPrimaryContainer,
-        Icons.info_outline,
-      ),
-      BannerTone.warning => (
-        context.colors.errorContainer.withValues(alpha: 0.6),
-        context.colors.onErrorContainer,
-        Icons.warning_amber_rounded,
-      ),
-      BannerTone.prototype => (
-        context.colors.tertiaryContainer.withValues(alpha: 0.6),
-        context.colors.onTertiaryContainer,
-        Icons.science_outlined,
-      ),
-      BannerTone.fund => (context.appColors.fundContainer, context.appColors.onFundContainer, Icons.savings_outlined),
+    final defaultIcon = switch (tone) {
+      BannerTone.info => Icons.info_outline,
+      BannerTone.warning => Icons.warning_amber_rounded,
+      BannerTone.prototype => Icons.science_outlined,
+      BannerTone.fund => Icons.savings_outlined,
     };
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(12)),
+    final iconColor = tone == BannerTone.warning ? context.colors.error : NeuPalette.of(context).accent;
+    return NeuBox(
+      style: NeuStyle.inset,
+      radius: 18,
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon ?? defaultIcon, size: 20, color: fg),
-          const SizedBox(width: 10),
+          Icon(icon ?? defaultIcon, size: 20, color: iconColor),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(message, style: context.text.bodyMedium?.copyWith(color: fg, height: 1.35)),
+                Text(message, style: context.text.bodyMedium?.copyWith(height: 1.4)),
                 if (action != null) ...[const SizedBox(height: 6), action!],
               ],
             ),
@@ -239,20 +218,17 @@ class EmptyState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              color: context.colors.primaryContainer.withValues(alpha: 0.5),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, size: 30, color: context.colors.primary),
+          NeuBox(
+            circle: true,
+            width: 72,
+            height: 72,
+            child: Icon(icon, size: 30, color: NeuPalette.of(context).accent),
           ),
           const SizedBox(height: 16),
           Text(
             title,
             textAlign: TextAlign.center,
-            style: context.text.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+            style: context.text.titleMedium?.copyWith(fontWeight: FontWeight.w600),
           ),
           if (message != null) ...[
             const SizedBox(height: 6),
@@ -306,23 +282,7 @@ class BusyButton extends StatelessWidget {
   final IconData? icon;
 
   @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: FilledButton(
-        onPressed: busy ? null : onPressed,
-        child: busy
-            ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.4))
-            : Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (icon != null) ...[Icon(icon, size: 20), const SizedBox(width: 8)],
-                  Flexible(child: Text(label, overflow: TextOverflow.ellipsis)),
-                ],
-              ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => NeuButton(label: label, onPressed: onPressed, busy: busy, icon: icon);
 }
 
 /// Label above a value, used in detail screens.
@@ -360,7 +320,7 @@ class BottomActionBar extends StatelessWidget {
       color: context.theme.scaffoldBackgroundColor,
       child: SafeArea(
         top: false,
-        child: Padding(padding: const EdgeInsets.fromLTRB(16, 8, 16, 12), child: child),
+        child: Padding(padding: const EdgeInsets.fromLTRB(20, 14, 20, 16), child: child),
       ),
     );
   }

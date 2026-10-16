@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../data/models/models.dart';
+import '../neu/neu.dart';
 
 extension ExpenseCategoryVisuals on ExpenseCategory {
   IconData get icon => switch (this) {
@@ -15,14 +16,14 @@ extension ExpenseCategoryVisuals on ExpenseCategory {
   };
 
   Color get color => switch (this) {
-    ExpenseCategory.breakfast => const Color(0xFFB45309),
-    ExpenseCategory.lunch => const Color(0xFFC2410C),
-    ExpenseCategory.dinner => const Color(0xFFBE185D),
-    ExpenseCategory.groceries => const Color(0xFF15803D),
-    ExpenseCategory.household => const Color(0xFF0369A1),
-    ExpenseCategory.bills => const Color(0xFF7C3AED),
-    ExpenseCategory.transport => const Color(0xFF0F766E),
-    ExpenseCategory.other => const Color(0xFF475467),
+    ExpenseCategory.breakfast => const Color(0xFFE08A3C),
+    ExpenseCategory.lunch => const Color(0xFFE2725B),
+    ExpenseCategory.dinner => const Color(0xFFD2668E),
+    ExpenseCategory.groceries => const Color(0xFF3FA36E),
+    ExpenseCategory.household => const Color(0xFF3E95CF),
+    ExpenseCategory.bills => const Color(0xFF9A6BDB),
+    ExpenseCategory.transport => const Color(0xFF2FAFAD),
+    ExpenseCategory.other => const Color(0xFF7D8797),
   };
 }
 
@@ -35,12 +36,13 @@ class CategoryIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = muted ? Theme.of(context).disabledColor : category.color;
-    return Container(
+    final color = muted ? NeuPalette.of(context).muted.withValues(alpha: 0.6) : category.color;
+    return NeuBox(
+      circle: true,
+      depth: size / 11,
       width: size,
       height: size,
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(size * 0.3)),
-      child: Icon(category.icon, color: color, size: size * 0.5),
+      child: Icon(category.icon, color: color, size: size * 0.46),
     );
   }
 }

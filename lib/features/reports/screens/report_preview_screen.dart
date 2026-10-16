@@ -8,7 +8,9 @@ import '../../../core/utils/dates.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/utils/quantity.dart';
 import '../../../core/widgets/category_icon.dart';
+import '../../../core/neu/neu.dart';
 import '../../../core/widgets/common.dart';
+import '../../../core/widgets/neu_header.dart';
 import '../../../data/models/models.dart';
 import '../../../data/services/report_builder.dart';
 import '../../groups/group_providers.dart';
@@ -51,7 +53,7 @@ class _ReportPreviewScreenState extends ConsumerState<ReportPreviewScreen> {
     final data = snapshot.value == null ? null : ReportBuilder.build(snapshot.value!, widget.range);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Report preview')),
+      appBar: NeuHeader(title: 'Report preview'),
       body: snapshot.when(
         loading: () => const LoadingView(),
         error: (error, _) => ErrorView(error: error),
@@ -66,20 +68,20 @@ class _ReportPreviewScreenState extends ConsumerState<ReportPreviewScreen> {
                   Row(
                     children: [
                       Expanded(
-                        child: OutlinedButton.icon(
+                        child: NeuButton(
+                          label: 'Print',
+                          icon: Icons.print_outlined,
+                          primary: false,
                           onPressed: _busy ? null : () => _export(data, share: false),
-                          icon: const Icon(Icons.print_outlined),
-                          label: const Text('Print / Save'),
                         ),
                       ),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 16),
                       Expanded(
-                        child: FilledButton.icon(
-                          onPressed: _busy ? null : () => _export(data, share: true),
-                          icon: _busy
-                              ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                              : const Icon(Icons.ios_share_rounded),
-                          label: const Text('Share PDF'),
+                        child: NeuButton(
+                          label: 'Share PDF',
+                          icon: Icons.ios_share_rounded,
+                          busy: _busy,
+                          onPressed: () => _export(data, share: true),
                         ),
                       ),
                     ],
@@ -101,7 +103,7 @@ class _ReportBody extends StatelessWidget {
     final muted = context.appColors.muted;
     final summary = data.summary;
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
       children: [
         AppCard(
           child: Column(
@@ -116,7 +118,7 @@ class _ReportBody extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 4),
-              Text(data.group.name, style: context.text.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
+              Text(data.group.name, style: context.text.titleLarge?.copyWith(fontWeight: FontWeight.w500)),
               const SizedBox(height: 4),
               Text(
                 'Code ${data.group.code}  ·  ${AppDates.range(data.range)} (${data.range.dayCount} days)',
@@ -162,8 +164,7 @@ class _ReportBody extends StatelessWidget {
         ),
         if (data.fundAsOfEnd.hasFund || data.contributions.isNotEmpty) ...[
           SectionHeader('Group fund (as of ${AppDates.day(data.range.end)})'),
-          Card(
-            color: context.appColors.fundContainer,
+          NeuBox(
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: DefaultTextStyle.merge(
@@ -193,8 +194,7 @@ class _ReportBody extends StatelessWidget {
           ),
         ],
         const SectionHeader('Members in this period'),
-        Card(
-          clipBehavior: Clip.antiAlias,
+        NeuBox(
           child: Column(
             children: [
               for (final (i, m) in data.members.indexed) ...[

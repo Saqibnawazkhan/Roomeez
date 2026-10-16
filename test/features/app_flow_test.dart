@@ -44,7 +44,7 @@ void main() {
 
   testWidgets('home lists the signed-in user\'s groups', (tester) async {
     await pumpApp(tester, signedInAs: 'u_ali');
-    expect(find.text('Hi, Ali'), findsOneWidget);
+    expect(find.text('Hi, Ali!'), findsOneWidget);
     expect(find.text('Gulberg Apartment 4B'), findsOneWidget);
     expect(find.text('Hostel Room 12, Johar Town'), findsOneWidget);
   });

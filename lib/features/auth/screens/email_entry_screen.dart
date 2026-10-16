@@ -5,8 +5,10 @@ import 'package:go_router/go_router.dart';
 import '../../../app/providers.dart';
 import '../../../app/routes.dart';
 import '../../../app/theme/app_theme.dart';
+import '../../../core/neu/neu.dart';
 import '../../../core/errors/app_exception.dart';
 import '../../../core/widgets/common.dart';
+import '../../../core/widgets/neu_header.dart';
 
 /// Sign in or sign up with a code sent by email.
 class EmailEntryScreen extends ConsumerStatefulWidget {
@@ -47,7 +49,7 @@ class _EmailEntryScreenState extends ConsumerState<EmailEntryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(),
+      appBar: NeuHeader(title: ''),
       body: SafeArea(
         child: Form(
           key: _formKey,
@@ -61,7 +63,7 @@ class _EmailEntryScreenState extends ConsumerState<EmailEntryScreen> {
                 style: context.text.bodyLarge?.copyWith(color: context.appColors.muted),
               ),
               const SizedBox(height: 28),
-              TextFormField(
+              NeuTextFormField(
                 controller: _email,
                 autofocus: true,
                 keyboardType: TextInputType.emailAddress,

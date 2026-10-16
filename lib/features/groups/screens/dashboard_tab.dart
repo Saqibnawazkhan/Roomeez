@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/providers.dart';
 import '../../../app/routes.dart';
-import '../../../app/theme/app_theme.dart';
+import '../../../core/neu/neu.dart';
 import '../../../core/utils/dates.dart';
+import '../../../core/utils/money.dart';
 import '../../../core/widgets/common.dart';
+import '../../../core/widgets/neu_header.dart';
 import '../../../core/widgets/period_selector.dart';
 import '../../../data/models/group_snapshot.dart';
 import '../../../data/services/balance_calculator.dart';
@@ -29,6 +33,7 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
   @override
   Widget build(BuildContext context) {
     final s = widget.snapshot;
+    final palette = NeuPalette.of(context);
     final range = _period.resolve();
     final summary = BalanceCalculator.summarize(
       members: s.members,
@@ -45,121 +50,165 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
     final myNet = allTime.balanceOf(s.viewerUserId)?.netPaisa ?? 0;
     final recent = s.expenses.where((e) => range == null || range.contains(e.date)).take(5).toList();
     final pending = ref.watch(pendingJoinRequestsProvider(s.group.id)).value ?? const [];
+    final canAdd = PermissionPolicy.canAddExpense(s.me);
+    final me = ref.watch(currentUserProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(s.group.name, maxLines: 1, overflow: TextOverflow.ellipsis),
-            Text(
-              '${s.activeMembers.length} members',
-              style: context.text.bodySmall?.copyWith(color: context.appColors.muted),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
+      appBar: NeuHeader(
+        title: s.group.name,
+        caption: '${s.activeMembers.length} members',
+        trailing: [
+          NeuIconButton(
+            icon: Icons.settings_outlined,
             tooltip: 'Group settings',
             onPressed: () => context.push(Routes.groupSettings(s.group.id)),
-            icon: const Icon(Icons.settings_outlined),
           ),
         ],
       ),
-      floatingActionButton: PermissionPolicy.canAddExpense(s.me)
-          ? FloatingActionButton.extended(
-              heroTag: 'dashboard-add',
-              onPressed: () => context.push(Routes.addExpense(s.group.id)),
-              icon: const Icon(Icons.add),
-              label: const Text('Add expense'),
-            )
-          : null,
       body: ListView(
-        padding: const EdgeInsets.only(bottom: 96),
+        padding: const EdgeInsets.only(bottom: 32),
         children: [
-          const SizedBox(height: 4),
           PeriodSelector(value: _period, onChanged: (p) => setState(() => _period = p)),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 if (pending.isNotEmpty) ...[
-                  AppCard(
-                    padding: const EdgeInsets.fromLTRB(16, 6, 6, 6),
+                  NeuPressable(
                     onTap: () => widget.onOpenTab(GroupTab.members),
+                    radius: 30,
+                    padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
                     child: Row(
                       children: [
-                        Icon(Icons.person_add_alt_1_outlined, color: context.colors.primary, size: 20),
-                        const SizedBox(width: 10),
+                        Icon(Icons.person_add_alt_1_rounded, color: palette.accent, size: 22),
+                        const SizedBox(width: 12),
                         Expanded(
                           child: Text(
                             pending.length == 1
                                 ? '${pending.first.name} wants to join'
                                 : '${pending.length} people want to join',
-                            style: const TextStyle(fontWeight: FontWeight.w600),
+                            style: const TextStyle(fontWeight: FontWeight.w500),
                           ),
                         ),
-                        TextButton(onPressed: () => widget.onOpenTab(GroupTab.members), child: const Text('Review')),
+                        Text(
+                          'Review',
+                          style: TextStyle(color: palette.accent, fontWeight: FontWeight.w600),
+                        ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 22),
                 ],
-                _TotalCard(summary: summary),
-                const SizedBox(height: 12),
+                _TotalCard(summary: summary, onAdd: canAdd ? () => context.push(Routes.addExpense(s.group.id)) : null),
+                const NeuSectionLabel('Group fund'),
+                if (fund.hasFund)
+                  GestureDetector(
+                    onTap: () => context.push(Routes.groupSettings(s.group.id)),
+                    child: Column(
+                      children: [
+                        NeuProgress(
+                          value: fund.contributedPaisa == 0 ? 0 : fund.remainingPaisa / fund.contributedPaisa,
+                          startLabel: fund.contributedPaisa == 0
+                              ? '0%'
+                              : '${(fund.remainingPaisa * 100 / fund.contributedPaisa).round().clamp(0, 100)}%',
+                          endLabel: '100%',
+                        ),
+                        const SizedBox(height: 10),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  '${Money.format(fund.remainingPaisa, roundToRupee: true)} left',
+                                  style: TextStyle(fontWeight: FontWeight.w600, color: palette.text, fontSize: 13.5),
+                                ),
+                              ),
+                              Text(
+                                'of ${Money.format(fund.contributedPaisa, roundToRupee: true)}',
+                                style: TextStyle(color: palette.muted, fontSize: 13),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  NeuPressable(
+                    onTap: () => context.push(Routes.addContribution(s.group.id)),
+                    radius: 24,
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                    child: Row(
+                      children: [
+                        Icon(Icons.savings_outlined, color: palette.accent),
+                        const SizedBox(width: 12),
+                        const Expanded(child: Text('No group fund yet')),
+                        Text(
+                          'Add money',
+                          style: TextStyle(color: palette.accent, fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                  ),
+                const SizedBox(height: 26),
                 IntrinsicHeight(
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Expanded(
-                        child: _StatCard(
-                          label: 'Group fund left',
-                          icon: Icons.savings_outlined,
-                          color: context.appColors.fund,
-                          value: fund.hasFund
-                              ? AmountText(fund.remainingPaisa)
-                              : Text('None', style: TextStyle(color: context.appColors.muted)),
-                          onTap: () => context.push(Routes.groupSettings(s.group.id)),
+                        child: _BalanceCard(
+                          name: me?.name ?? s.nameOf(s.viewerUserId),
+                          net: myNet,
+                          onTap: () => widget.onOpenTab(GroupTab.members),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 18),
                       Expanded(
-                        child: _StatCard(
-                          label: 'Your balance',
-                          icon: Icons.account_balance_wallet_outlined,
-                          color: context.colors.primary,
-                          value: AmountText(myNet, signed: true, colorize: true, roundToRupee: true),
-                          onTap: () => widget.onOpenTab(GroupTab.members),
+                        child: Column(
+                          children: [
+                            Expanded(
+                              child: _SmallCard(
+                                title: 'Members',
+                                value: '${s.activeMembers.length}',
+                                icon: Icons.group_rounded,
+                                onTap: () => widget.onOpenTab(GroupTab.members),
+                              ),
+                            ),
+                            const SizedBox(height: 18),
+                            Expanded(
+                              child: _SmallCard(
+                                title: 'Group code',
+                                value: s.group.code,
+                                icon: Icons.copy_rounded,
+                                onTap: () async {
+                                  await Clipboard.setData(ClipboardData(text: s.group.code));
+                                  if (context.mounted) showAppSnack(context, 'Code copied');
+                                },
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
                 ),
-                SectionHeader(
+                NeuSectionLabel(
                   'Recent expenses',
-                  trailing: TextButton(
-                    onPressed: () => widget.onOpenTab(GroupTab.expenses),
-                    child: const Text('See all'),
+                  trailing: GestureDetector(
+                    onTap: () => widget.onOpenTab(GroupTab.expenses),
+                    child: Text(
+                      'See all',
+                      style: TextStyle(color: palette.accent, fontWeight: FontWeight.w600),
+                    ),
                   ),
                 ),
+                if (recent.isEmpty)
+                  const EmptyState(icon: Icons.receipt_long_outlined, title: 'No expenses yet')
+                else
+                  for (final e in recent) ExpenseTile(expense: e, snapshot: s, showDate: true),
               ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Card(
-              clipBehavior: Clip.antiAlias,
-              child: recent.isEmpty
-                  ? const EmptyState(icon: Icons.receipt_long_outlined, title: 'No expenses yet')
-                  : Column(
-                      children: [
-                        for (final (i, e) in recent.indexed) ...[
-                          if (i > 0) const Divider(indent: 70),
-                          ExpenseTile(expense: e, snapshot: s, showDate: true),
-                        ],
-                      ],
-                    ),
             ),
           ),
         ],
@@ -168,90 +217,155 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
   }
 }
 
+/// "Total spent" with a round accent button to add an expense.
 class _TotalCard extends StatelessWidget {
-  const _TotalCard({required this.summary});
+  const _TotalCard({required this.summary, required this.onAdd});
 
   final FinancialSummary summary;
+  final VoidCallback? onAdd;
 
   @override
   Widget build(BuildContext context) {
-    final onPrimary = context.colors.onPrimary;
-    final soft = onPrimary.withValues(alpha: 0.8);
-    return Card(
-      color: context.colors.primary,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Total spent', style: context.text.labelLarge?.copyWith(color: soft)),
-            const SizedBox(height: 4),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: AmountText(
-                summary.totalExpensesPaisa,
-                style: context.text.displaySmall?.copyWith(color: onPrimary, fontWeight: FontWeight.w800),
+    final palette = NeuPalette.of(context);
+    return NeuBox(
+      radius: 28,
+      padding: const EdgeInsets.fromLTRB(22, 20, 18, 20),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'TOTAL SPENT',
+                  style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, letterSpacing: 2, color: palette.muted),
+                ),
+                const SizedBox(height: 6),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: AmountText(
+                    summary.totalExpensesPaisa,
+                    style: TextStyle(fontSize: 34, fontWeight: FontWeight.w300, color: palette.text, height: 1.1),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${summary.expenseCount} ${summary.expenseCount == 1 ? 'expense' : 'expenses'}',
+                  style: TextStyle(color: palette.muted, fontSize: 13),
+                ),
+              ],
+            ),
+          ),
+          if (onAdd != null)
+            Tooltip(
+              message: 'Add expense',
+              child: Semantics(
+                button: true,
+                label: 'Add expense',
+                excludeSemantics: true,
+                child: GestureDetector(
+                  onTap: onAdd,
+                  child: NeuBox(
+                    circle: true,
+                    width: 62,
+                    height: 62,
+                    padding: const EdgeInsets.all(7),
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(shape: BoxShape.circle, gradient: palette.accentGradient),
+                      child: const Icon(Icons.add_rounded, color: Colors.white, size: 30),
+                    ),
+                  ),
+                ),
               ),
             ),
-            const SizedBox(height: 2),
-            Text(
-              '${summary.expenseCount} ${summary.expenseCount == 1 ? 'expense' : 'expenses'}',
-              style: context.text.bodySmall?.copyWith(color: soft),
-            ),
-          ],
-        ),
+        ],
       ),
     );
   }
 }
 
-class _StatCard extends StatelessWidget {
-  const _StatCard({
-    required this.label,
-    required this.icon,
-    required this.color,
-    required this.value,
-    required this.onTap,
-  });
+/// Like the profile card in the reference: an avatar ring, a greeting and
+/// the viewer's balance.
+class _BalanceCard extends StatelessWidget {
+  const _BalanceCard({required this.name, required this.net, required this.onTap});
 
-  final String label;
-  final IconData icon;
-  final Color color;
-  final Widget value;
+  final String name;
+  final int net;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(
+    final palette = NeuPalette.of(context);
+    return NeuPressable(
       onTap: onTap,
-      padding: const EdgeInsets.all(14),
+      radius: 26,
+      padding: const EdgeInsets.fromLTRB(12, 18, 12, 18),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Row(
-            children: [
-              Icon(icon, size: 18, color: color),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: context.text.labelMedium?.copyWith(color: context.appColors.muted),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
+          MemberAvatar(name: name, size: 66),
+          const SizedBox(height: 12),
+          Text('Your balance', style: TextStyle(color: palette.muted, fontSize: 12.5)),
+          const SizedBox(height: 2),
           FittedBox(
             fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: DefaultTextStyle.merge(
-              style: context.text.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-              child: value,
+            child: AmountText(
+              net,
+              signed: true,
+              colorize: true,
+              roundToRupee: true,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Like the Wi-Fi / Bluetooth cards in the reference.
+class _SmallCard extends StatelessWidget {
+  const _SmallCard({required this.title, required this.value, required this.icon, required this.onTap});
+
+  final String title;
+  final String value;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = NeuPalette.of(context);
+    return NeuPressable(
+      onTap: onTap,
+      radius: 22,
+      padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            title,
+            style: TextStyle(fontWeight: FontWeight.w600, color: palette.text, fontSize: 14),
+          ),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: palette.muted, fontSize: 13, letterSpacing: 0.5),
+                ),
+              ),
+              NeuBox(
+                style: NeuStyle.inset,
+                circle: true,
+                width: 30,
+                height: 30,
+                child: Icon(icon, size: 15, color: palette.accent),
+              ),
+            ],
           ),
         ],
       ),

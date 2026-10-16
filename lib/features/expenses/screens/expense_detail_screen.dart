@@ -5,11 +5,13 @@ import 'package:go_router/go_router.dart';
 import '../../../app/providers.dart';
 import '../../../app/routes.dart';
 import '../../../app/theme/app_theme.dart';
+import '../../../core/neu/neu.dart';
 import '../../../core/errors/app_exception.dart';
 import '../../../core/utils/dates.dart';
 import '../../../core/utils/quantity.dart';
 import '../../../core/widgets/category_icon.dart';
 import '../../../core/widgets/common.dart';
+import '../../../core/widgets/neu_header.dart';
 import '../../../data/models/group_snapshot.dart';
 import '../../../data/models/models.dart';
 import '../../../data/services/balance_calculator.dart';
@@ -41,30 +43,40 @@ class ExpenseDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final snapshot = ref.watch(groupSnapshotProvider(groupId));
     return snapshot.when(
-      loading: () => Scaffold(appBar: AppBar(), body: const LoadingView()),
+      loading: () => Scaffold(
+        appBar: NeuHeader(title: ''),
+        body: const LoadingView(),
+      ),
       error: (error, _) => Scaffold(
-        appBar: AppBar(),
+        appBar: NeuHeader(title: ''),
         body: ErrorView(error: error),
       ),
       data: (s) {
         final e = s.expenseById(expenseId);
         if (e == null) {
           return Scaffold(
-            appBar: AppBar(),
+            appBar: NeuHeader(title: ''),
             body: const ErrorView(error: NotFoundException('This expense could not be found.')),
           );
         }
         final canEdit = PermissionPolicy.canEditExpense(actor: s.me, expense: e);
         return Scaffold(
-          appBar: AppBar(
-            title: const Text('Expense details'),
-            actions: [
+          appBar: NeuHeader(
+            title: 'Expense details',
+            trailing: [
               if (canEdit)
                 PopupMenuButton<String>(
                   tooltip: 'More',
                   onSelected: (value) {
                     if (value == 'void') _void(context, ref, s, e);
                   },
+                  child: NeuBox(
+                    circle: true,
+                    width: 46,
+                    height: 46,
+                    depth: 4.6,
+                    child: Icon(Icons.more_horiz_rounded, color: NeuPalette.of(context).muted),
+                  ),
                   itemBuilder: (_) => const [
                     PopupMenuItem(
                       value: 'void',
@@ -101,7 +113,7 @@ class ExpenseDetailScreen extends ConsumerWidget {
     final labelStyle = TextStyle(color: muted, fontSize: 12.5);
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
       children: [
         AppCard(
           child: Column(
@@ -138,7 +150,7 @@ class ExpenseDetailScreen extends ConsumerWidget {
                     child: AmountText(
                       e.totalPaisa,
                       strikethrough: e.isVoided,
-                      style: context.text.headlineMedium?.copyWith(fontWeight: FontWeight.w800),
+                      style: context.text.headlineMedium?.copyWith(fontWeight: FontWeight.w300),
                     ),
                   ),
                   if (e.isVoided)
@@ -176,7 +188,7 @@ class ExpenseDetailScreen extends ConsumerWidget {
         ],
         if (e.isItemized) ...[
           const SectionHeader('Items'),
-          Card(
+          NeuBox(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
               child: Column(
@@ -317,7 +329,7 @@ class _VoidDialogState extends State<_VoidDialog> {
         children: [
           const Text('It stays visible but won\'t count in totals. This can\'t be undone.'),
           const SizedBox(height: 14),
-          TextField(
+          NeuTextField(
             controller: _reason,
             autofocus: true,
             textCapitalization: TextCapitalization.sentences,

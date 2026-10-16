@@ -7,7 +7,9 @@ import '../../../app/routes.dart';
 import '../../../app/theme/app_theme.dart';
 import '../../../core/errors/app_exception.dart';
 import '../../../core/utils/dates.dart';
+import '../../../core/neu/neu.dart';
 import '../../../core/widgets/common.dart';
+import '../../../core/widgets/neu_header.dart';
 import '../../../data/models/group_snapshot.dart';
 import '../../../data/services/permission_policy.dart';
 import '../../contributions/widgets/fund_card.dart';
@@ -86,19 +88,19 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
   Widget build(BuildContext context) {
     final snapshot = ref.watch(groupSnapshotProvider(widget.groupId));
     return Scaffold(
-      appBar: AppBar(title: const Text('Group settings')),
+      appBar: NeuHeader(title: 'Group settings'),
       body: snapshot.when(
         loading: () => const LoadingView(),
         error: (error, _) => _busy ? const LoadingView() : ErrorView(error: error),
         data: (s) {
           return ListView(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
             children: [
               AppCard(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(s.group.name, style: context.text.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
+                    Text(s.group.name, style: context.text.titleLarge?.copyWith(fontWeight: FontWeight.w500)),
                     if (s.group.description != null) ...[
                       const SizedBox(height: 4),
                       Text(
@@ -129,7 +131,7 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
               FundCard(snapshot: s),
               if (s.contributions.isNotEmpty) ...[
                 const SizedBox(height: 8),
-                Card(
+                NeuBox(
                   child: Column(
                     children: [
                       for (final (i, c) in s.contributions.indexed) ...[
@@ -152,14 +154,12 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
                 ),
               ],
               const SizedBox(height: 28),
-              OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: context.colors.error,
-                  side: BorderSide(color: context.colors.error.withValues(alpha: 0.5)),
-                ),
+              NeuButton(
+                label: 'Leave group',
+                icon: Icons.logout_rounded,
+                primary: false,
+                destructive: true,
                 onPressed: _busy ? null : () => _leave(s),
-                icon: const Icon(Icons.logout),
-                label: const Text('Leave group'),
               ),
             ],
           );

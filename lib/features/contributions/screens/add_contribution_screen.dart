@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/providers.dart';
+import '../../../core/neu/neu.dart';
 import '../../../core/errors/app_exception.dart';
 import '../../../core/utils/dates.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/widgets/common.dart';
+import '../../../core/widgets/neu_header.dart';
 import '../../groups/group_providers.dart';
 
 /// Records money a member puts into the group fund.
@@ -65,7 +67,7 @@ class _AddContributionScreenState extends ConsumerState<AddContributionScreen> {
   Widget build(BuildContext context) {
     final snapshot = ref.watch(groupSnapshotProvider(widget.groupId));
     return Scaffold(
-      appBar: AppBar(title: const Text('Add to group fund')),
+      appBar: NeuHeader(title: 'Add to group fund'),
       body: snapshot.when(
         loading: () => const LoadingView(),
         error: (error, _) => ErrorView(error: error),
@@ -74,25 +76,24 @@ class _AddContributionScreenState extends ConsumerState<AddContributionScreen> {
           return Form(
             key: _formKey,
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
               children: [
                 const SectionHeader('Who is adding money?', padding: EdgeInsets.fromLTRB(4, 8, 4, 8)),
                 Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
+                  spacing: 14,
+                  runSpacing: 14,
                   children: [
                     for (final m in s.activeMembers)
-                      ChoiceChip(
-                        avatar: MemberAvatar(name: m.displayName, size: 24),
-                        label: Text(m.userId == s.viewerUserId ? 'You' : m.displayName),
+                      NeuChip(
+                        leading: MemberAvatar(name: m.displayName, size: 26),
+                        label: m.userId == s.viewerUserId ? 'You' : m.displayName,
                         selected: selected == m.userId,
-                        showCheckmark: false,
-                        onSelected: (_) => setState(() => _memberUserId = m.userId),
+                        onTap: () => setState(() => _memberUserId = m.userId),
                       ),
                   ],
                 ),
                 const SizedBox(height: 16),
-                TextFormField(
+                NeuTextFormField(
                   controller: _amount,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   decoration: const InputDecoration(labelText: 'Amount', prefixText: 'PKR '),
@@ -104,8 +105,9 @@ class _AddContributionScreenState extends ConsumerState<AddContributionScreen> {
                   },
                 ),
                 const SizedBox(height: 12),
-                InkWell(
-                  borderRadius: BorderRadius.circular(12),
+                NeuPickerField(
+                  label: 'Date',
+                  value: AppDates.day(_date),
                   onTap: () async {
                     final picked = await showDatePicker(
                       context: context,
@@ -115,16 +117,9 @@ class _AddContributionScreenState extends ConsumerState<AddContributionScreen> {
                     );
                     if (picked != null) setState(() => _date = dateOnly(picked));
                   },
-                  child: InputDecorator(
-                    decoration: const InputDecoration(
-                      labelText: 'Date',
-                      suffixIcon: Icon(Icons.calendar_today_outlined),
-                    ),
-                    child: Text(AppDates.day(_date)),
-                  ),
                 ),
                 const SizedBox(height: 12),
-                TextFormField(
+                NeuTextFormField(
                   controller: _note,
                   textCapitalization: TextCapitalization.sentences,
                   decoration: const InputDecoration(labelText: 'Note (optional)', hintText: 'e.g. October top-up'),

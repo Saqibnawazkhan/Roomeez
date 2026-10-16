@@ -4,9 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/providers.dart';
 import '../../../app/theme/app_theme.dart';
+import '../../../core/neu/neu.dart';
 import '../../../core/errors/app_exception.dart';
 import '../../../core/utils/phone.dart';
 import '../../../core/widgets/common.dart';
+import '../../../core/widgets/neu_header.dart';
 import '../../groups/group_providers.dart';
 
 class ProfileSetupScreen extends ConsumerStatefulWidget {
@@ -56,8 +58,10 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   Widget build(BuildContext context) {
     final invitedGroups = ref.watch(myGroupsProvider).value ?? const [];
     return Scaffold(
-      appBar: AppBar(
-        actions: [
+      appBar: NeuHeader(
+        title: '',
+        showBack: false,
+        trailing: [
           TextButton(
             onPressed: () => ref.read(authRepositoryProvider).signOut(),
             child: const Text('Use another account'),
@@ -86,7 +90,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                 ),
                 const SizedBox(height: 16),
               ],
-              TextFormField(
+              NeuTextFormField(
                 controller: _name,
                 autofocus: true,
                 textCapitalization: TextCapitalization.words,
@@ -94,7 +98,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                 validator: (value) => (value ?? '').trim().length < 2 ? 'Enter your full name' : null,
               ),
               const SizedBox(height: 16),
-              TextFormField(
+              NeuTextFormField(
                 controller: _phone,
                 keyboardType: TextInputType.phone,
                 inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9+\s-]'))],

@@ -3,10 +3,12 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/routes.dart';
 import '../../../app/theme/app_theme.dart';
+import '../../../core/neu/neu.dart';
 import '../../../core/utils/dates.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/widgets/category_icon.dart';
 import '../../../core/widgets/common.dart';
+import '../../../core/widgets/neu_header.dart';
 import '../../../core/widgets/period_selector.dart';
 import '../../../data/models/group_snapshot.dart';
 import '../../../data/models/models.dart';
@@ -124,21 +126,26 @@ class _ExpensesTabState extends State<ExpensesTab> {
     final hasFilters = _category != null || _memberUserId != null || _search.text.isNotEmpty;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Expenses')),
-      floatingActionButton: PermissionPolicy.canAddExpense(s.me)
-          ? FloatingActionButton.extended(
-              heroTag: 'expenses-add',
+      appBar: NeuHeader(
+        title: 'Expenses',
+        caption: '${filtered.length} ${filtered.length == 1 ? 'expense' : 'expenses'} · ${Money.format(countedTotal)}',
+        showBack: false,
+        trailing: [
+          if (PermissionPolicy.canAddExpense(s.me))
+            NeuIconButton(
+              icon: Icons.add_rounded,
+              tooltip: 'Add expense',
+              color: NeuPalette.of(context).accent,
               onPressed: () => context.push(Routes.addExpense(s.group.id)),
-              icon: const Icon(Icons.add),
-              label: const Text('Add expense'),
-            )
-          : null,
+            ),
+        ],
+      ),
       body: ListView(
-        padding: const EdgeInsets.only(bottom: 96),
+        padding: const EdgeInsets.only(bottom: 32),
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-            child: TextField(
+            padding: const EdgeInsets.fromLTRB(20, 6, 20, 6),
+            child: NeuTextField(
               controller: _search,
               onChanged: (_) => setState(() {}),
               textInputAction: TextInputAction.search,
@@ -156,10 +163,9 @@ class _ExpensesTabState extends State<ExpensesTab> {
             ),
           ),
           PeriodSelector(value: _period, onChanged: (p) => setState(() => _period = p)),
-          const SizedBox(height: 8),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.fromLTRB(16, 2, 16, 14),
             child: Row(
               children: [
                 _FilterChipButton(
@@ -167,7 +173,7 @@ class _ExpensesTabState extends State<ExpensesTab> {
                   active: _category != null,
                   onTap: _pickCategory,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 12),
                 _FilterChipButton(
                   label: _memberUserId == null ? 'All members' : s.nameOf(_memberUserId),
                   active: _memberUserId != null,
@@ -189,13 +195,6 @@ class _ExpensesTabState extends State<ExpensesTab> {
               ],
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
-            child: Text(
-              '${filtered.length} ${filtered.length == 1 ? 'expense' : 'expenses'} · ${Money.format(countedTotal)}',
-              style: context.text.bodySmall?.copyWith(color: context.appColors.muted),
-            ),
-          ),
           if (filtered.isEmpty)
             EmptyState(
               icon: Icons.search_off,
@@ -206,34 +205,20 @@ class _ExpensesTabState extends State<ExpensesTab> {
             ),
           for (final entry in days.entries) ...[
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 6),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      AppDates.relativeDay(entry.key),
-                      style: context.text.labelLarge?.copyWith(fontWeight: FontWeight.w700),
-                    ),
-                  ),
-                  AmountText(
-                    entry.value.where((e) => !e.isVoided).fold(0, (sum, e) => sum + e.totalPaisa),
-                    style: context.text.labelLarge?.copyWith(color: context.appColors.muted),
-                  ),
-                ],
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: NeuSectionLabel(
+                AppDates.relativeDay(entry.key),
+                padding: const EdgeInsets.fromLTRB(6, 12, 6, 12),
+                trailing: AmountText(
+                  entry.value.where((e) => !e.isVoided).fold(0, (sum, e) => sum + e.totalPaisa),
+                  style: TextStyle(color: NeuPalette.of(context).muted, fontSize: 12.5, fontWeight: FontWeight.w600),
+                ),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Card(
-                clipBehavior: Clip.antiAlias,
-                child: Column(
-                  children: [
-                    for (final (i, e) in entry.value.indexed) ...[
-                      if (i > 0) const Divider(indent: 70),
-                      ExpenseTile(expense: e, snapshot: s),
-                    ],
-                  ],
-                ),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                children: [for (final e in entry.value) ExpenseTile(expense: e, snapshot: s)],
               ),
             ),
           ],
@@ -252,12 +237,12 @@ class _FilterChipButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InputChip(
-      label: Text(label),
+    final palette = NeuPalette.of(context);
+    return NeuChip(
+      label: label,
       selected: active,
-      showCheckmark: false,
-      onPressed: onTap,
-      avatar: const Icon(Icons.filter_list, size: 18),
+      onTap: onTap,
+      trailing: Icon(Icons.expand_more_rounded, size: 18, color: active ? palette.accent : palette.muted),
     );
   }
 }

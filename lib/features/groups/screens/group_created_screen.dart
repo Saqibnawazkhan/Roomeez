@@ -6,6 +6,7 @@ import '../../../app/routes.dart';
 import '../../../app/theme/app_theme.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/widgets/common.dart';
+import '../../../core/widgets/neu_header.dart';
 import '../../../data/services/balance_calculator.dart';
 import '../group_providers.dart';
 import '../widgets/group_code_card.dart';
@@ -19,7 +20,7 @@ class GroupCreatedScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final snapshot = ref.watch(groupSnapshotProvider(groupId));
     return Scaffold(
-      appBar: AppBar(automaticallyImplyLeading: false),
+      appBar: const NeuHeader(title: '', showBack: false),
       body: snapshot.when(
         loading: () => const LoadingView(),
         error: (error, _) => ErrorView(error: error),

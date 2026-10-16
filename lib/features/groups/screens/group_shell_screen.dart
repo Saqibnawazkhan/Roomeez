@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/routes.dart';
+import '../../../core/neu/neu.dart';
 import '../../../core/widgets/common.dart';
+import '../../../core/widgets/neu_header.dart';
 import '../../expenses/screens/expenses_tab.dart';
 import '../../members/screens/members_tab.dart';
 import '../../reports/screens/reports_tab.dart';
@@ -32,9 +34,12 @@ class _GroupShellScreenState extends ConsumerState<GroupShellScreen> {
     final pendingCount = ref.watch(pendingJoinRequestsProvider(widget.groupId)).value?.length ?? 0;
 
     return snapshot.when(
-      loading: () => Scaffold(appBar: AppBar(), body: const LoadingView()),
+      loading: () => Scaffold(
+        appBar: NeuHeader(title: ''),
+        body: const LoadingView(),
+      ),
       error: (error, _) => Scaffold(
-        appBar: AppBar(),
+        appBar: NeuHeader(title: ''),
         body: ErrorView(
           error: error,
           action: FilledButton(onPressed: () => context.go(Routes.home), child: const Text('Back to home')),
@@ -50,38 +55,14 @@ class _GroupShellScreenState extends ConsumerState<GroupShellScreen> {
             MembersTab(snapshot: data),
           ],
         ),
-        bottomNavigationBar: NavigationBar(
-          selectedIndex: _tab.index,
-          onDestinationSelected: (index) => _select(GroupTab.values[index]),
-          destinations: [
-            const NavigationDestination(
-              icon: Icon(Icons.space_dashboard_outlined),
-              selectedIcon: Icon(Icons.space_dashboard),
-              label: 'Dashboard',
-            ),
-            const NavigationDestination(
-              icon: Icon(Icons.receipt_long_outlined),
-              selectedIcon: Icon(Icons.receipt_long),
-              label: 'Expenses',
-            ),
-            const NavigationDestination(
-              icon: Icon(Icons.description_outlined),
-              selectedIcon: Icon(Icons.description),
-              label: 'Reports',
-            ),
-            NavigationDestination(
-              icon: Badge(
-                isLabelVisible: pendingCount > 0,
-                label: Text('$pendingCount'),
-                child: const Icon(Icons.group_outlined),
-              ),
-              selectedIcon: Badge(
-                isLabelVisible: pendingCount > 0,
-                label: Text('$pendingCount'),
-                child: const Icon(Icons.group),
-              ),
-              label: 'Members',
-            ),
+        bottomNavigationBar: NeuBottomNav(
+          index: _tab.index,
+          onTap: (index) => _select(GroupTab.values[index]),
+          items: [
+            (Icons.space_dashboard_rounded, 'Dashboard', 0),
+            (Icons.receipt_long_rounded, 'Expenses', 0),
+            (Icons.insert_chart_rounded, 'Reports', 0),
+            (Icons.group_rounded, 'Members', pendingCount),
           ],
         ),
       ),

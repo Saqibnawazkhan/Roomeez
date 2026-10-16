@@ -7,7 +7,9 @@ import '../../../app/routes.dart';
 import '../../../app/theme/app_theme.dart';
 import '../../../core/errors/app_exception.dart';
 import '../../../core/utils/dates.dart';
+import '../../../core/neu/neu.dart';
 import '../../../core/widgets/common.dart';
+import '../../../core/widgets/neu_header.dart';
 import '../../../data/models/models.dart';
 import '../group_providers.dart';
 
@@ -46,7 +48,7 @@ class _JoinStatusScreenState extends ConsumerState<JoinStatusScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Join request')),
+      appBar: NeuHeader(title: 'Join request'),
       body: requests.isLoading && request == null
           ? const LoadingView()
           : request == null
@@ -124,10 +126,10 @@ class _JoinStatusScreenState extends ConsumerState<JoinStatusScreen> {
                       child: const Text('Approve now'),
                     ),
             ),
-          const SizedBox(height: 12),
-          OutlinedButton(onPressed: () => context.go(Routes.home), child: const Text('Back to home')),
+          const SizedBox(height: 20),
+          NeuButton(label: 'Back to home', primary: false, onPressed: () => context.go(Routes.home)),
         ] else
-          OutlinedButton(onPressed: () => context.go(Routes.home), child: const Text('Back to home')),
+          NeuButton(label: 'Back to home', primary: false, onPressed: () => context.go(Routes.home)),
       ],
     );
   }

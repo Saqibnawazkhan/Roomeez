@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../neu/neu.dart';
 import '../utils/dates.dart';
 
 /// Horizontal preset chips with a "Custom" option that opens a date range
@@ -10,7 +11,7 @@ class PeriodSelector extends StatelessWidget {
     required this.value,
     required this.onChanged,
     this.presets = PeriodPreset.values,
-    this.padding = const EdgeInsets.symmetric(horizontal: 16),
+    this.padding = const EdgeInsets.fromLTRB(16, 10, 16, 14),
   });
 
   final PeriodFilter value;
@@ -42,17 +43,16 @@ class PeriodSelector extends StatelessWidget {
         children: [
           for (final preset in presets)
             Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: ChoiceChip(
-                label: Text(
-                  preset == PeriodPreset.custom && value.preset == PeriodPreset.custom
-                      ? AppDates.range(value.customRange!)
-                      : preset.label,
-                ),
-                avatar: preset == PeriodPreset.custom ? const Icon(Icons.date_range, size: 18) : null,
-                showCheckmark: false,
+              padding: const EdgeInsets.only(right: 12),
+              child: NeuChip(
+                label: preset == PeriodPreset.custom && value.preset == PeriodPreset.custom
+                    ? AppDates.range(value.customRange!)
+                    : preset.label,
+                leading: preset == PeriodPreset.custom
+                    ? Icon(Icons.date_range, size: 18, color: NeuPalette.of(context).muted)
+                    : null,
                 selected: value.preset == preset,
-                onSelected: (_) {
+                onTap: () {
                   if (preset == PeriodPreset.custom) {
                     _pickCustom(context);
                   } else {

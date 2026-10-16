@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/routes.dart';
 import '../../../app/theme/app_theme.dart';
+import '../../../core/neu/neu.dart';
 import '../../../core/widgets/common.dart';
 import '../../../data/models/group_snapshot.dart';
 import '../../../data/services/balance_calculator.dart';
@@ -18,45 +19,44 @@ class FundCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fund = BalanceCalculator.fundStatus(expenses: snapshot.expenses, contributions: snapshot.contributions);
-    final colors = context.appColors;
     final canAdd = PermissionPolicy.canAddContribution(snapshot.me);
-    final addButton = canAdd
-        ? TextButton.icon(
-            style: TextButton.styleFrom(foregroundColor: colors.onFundContainer, visualDensity: VisualDensity.compact),
-            onPressed: () => context.push(Routes.addContribution(snapshot.group.id)),
-            icon: const Icon(Icons.add, size: 18),
-            label: const Text('Add money'),
-          )
-        : null;
-
-    return Card(
-      color: colors.fundContainer,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 14, 8, 8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (!fund.hasFund) ...[
-              Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: Text(
-                  'No money added yet.',
-                  style: context.text.bodySmall?.copyWith(color: colors.onFundContainer),
-                ),
-              ),
-            ] else ...[
-              Row(
-                children: [
-                  Expanded(child: _figure(context, 'Added', fund.contributedPaisa)),
-                  Expanded(child: _figure(context, 'Spent', fund.spentPaisa)),
-                  Expanded(child: _figure(context, 'Left', fund.remainingPaisa, emphasize: true)),
-                ],
-              ),
-            ],
-            if (addButton != null) ...[const SizedBox(height: 4), addButton] else const SizedBox(height: 8),
+    final palette = NeuPalette.of(context);
+    return NeuBox(
+      radius: 26,
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (!fund.hasFund)
+            Text('No money added yet.', style: TextStyle(color: palette.muted))
+          else ...[
+            NeuProgress(
+              value: fund.contributedPaisa == 0 ? 0 : fund.remainingPaisa / fund.contributedPaisa,
+              startLabel: fund.contributedPaisa == 0
+                  ? '0%'
+                  : '${(fund.remainingPaisa * 100 / fund.contributedPaisa).round().clamp(0, 100)}%',
+              endLabel: '100%',
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(child: _figure(context, 'Added', fund.contributedPaisa)),
+                Expanded(child: _figure(context, 'Spent', fund.spentPaisa)),
+                Expanded(child: _figure(context, 'Left', fund.remainingPaisa, emphasize: true)),
+              ],
+            ),
           ],
-        ),
+          if (canAdd) ...[
+            const SizedBox(height: 18),
+            NeuButton(
+              label: 'Add money',
+              icon: Icons.add_rounded,
+              primary: false,
+              height: 48,
+              onPressed: () => context.push(Routes.addContribution(snapshot.group.id)),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -66,7 +66,7 @@ class FundCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: context.text.labelSmall?.copyWith(color: colors.onFundContainer.withValues(alpha: 0.8))),
+        Text(label.toUpperCase(), style: TextStyle(fontSize: 10.5, letterSpacing: 1.5, color: colors.muted)),
         const SizedBox(height: 2),
         FittedBox(
           fit: BoxFit.scaleDown,
@@ -74,8 +74,8 @@ class FundCard extends StatelessWidget {
           child: AmountText(
             paisa,
             style: context.text.titleSmall?.copyWith(
-              fontWeight: emphasize ? FontWeight.w800 : FontWeight.w600,
-              color: paisa < 0 ? colors.negative : colors.onFundContainer,
+              fontWeight: emphasize ? FontWeight.w700 : FontWeight.w500,
+              color: paisa < 0 ? colors.negative : NeuPalette.of(context).text,
             ),
           ),
         ),

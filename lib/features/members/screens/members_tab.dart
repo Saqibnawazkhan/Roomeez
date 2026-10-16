@@ -8,7 +8,9 @@ import '../../../app/theme/app_theme.dart';
 import '../../../core/errors/app_exception.dart';
 import '../../../core/utils/dates.dart';
 import '../../../core/utils/phone.dart';
+import '../../../core/neu/neu.dart';
 import '../../../core/widgets/common.dart';
+import '../../../core/widgets/neu_header.dart';
 import '../../../data/models/group_snapshot.dart';
 import '../../../data/models/models.dart';
 import '../../../data/services/balance_calculator.dart';
@@ -32,51 +34,36 @@ class MembersTab extends ConsumerWidget {
     final canAdd = PermissionPolicy.canAddMember(s.me);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Members')),
-      floatingActionButton: canAdd
-          ? FloatingActionButton.extended(
-              heroTag: 'members-add',
+      appBar: NeuHeader(
+        title: 'Members',
+        caption: '${s.activeMembers.length} active',
+        showBack: false,
+        trailing: [
+          if (canAdd)
+            NeuIconButton(
+              icon: Icons.person_add_alt_1_rounded,
+              tooltip: 'Add member',
+              color: NeuPalette.of(context).accent,
               onPressed: () => context.push(Routes.addMember(s.group.id)),
-              icon: const Icon(Icons.person_add_alt_1_outlined),
-              label: const Text('Add member'),
-            )
-          : null,
+            ),
+        ],
+      ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
         children: [
           if (pending.isNotEmpty) ...[
-            SectionHeader('Join requests (${pending.length})', padding: const EdgeInsets.fromLTRB(4, 4, 4, 8)),
+            SectionHeader('Join requests (${pending.length})', padding: const EdgeInsets.fromLTRB(6, 10, 6, 12)),
             for (final request in pending) ...[
               _JoinRequestCard(request: request, snapshot: s),
-              const SizedBox(height: 8),
+              const SizedBox(height: 16),
             ],
           ],
           SectionHeader('Active members (${s.activeMembers.length})'),
-          Card(
-            clipBehavior: Clip.antiAlias,
-            child: Column(
-              children: [
-                for (final (i, m) in s.activeMembers.indexed) ...[
-                  if (i > 0) const Divider(indent: 72),
-                  _MemberTile(member: m, snapshot: s, balance: summary.balanceOf(m.userId)),
-                ],
-              ],
-            ),
-          ),
+          for (final m in s.activeMembers) _MemberTile(member: m, snapshot: s, balance: summary.balanceOf(m.userId)),
 
           if (s.formerMembers.isNotEmpty) ...[
             SectionHeader('Former members (${s.formerMembers.length})'),
-            Card(
-              clipBehavior: Clip.antiAlias,
-              child: Column(
-                children: [
-                  for (final (i, m) in s.formerMembers.indexed) ...[
-                    if (i > 0) const Divider(indent: 72),
-                    _MemberTile(member: m, snapshot: s, balance: summary.balanceOf(m.userId)),
-                  ],
-                ],
-              ),
-            ),
+            for (final m in s.formerMembers) _MemberTile(member: m, snapshot: s, balance: summary.balanceOf(m.userId)),
           ],
         ],
       ),
@@ -159,19 +146,11 @@ class _JoinRequestCardState extends ConsumerState<_JoinRequestCard> {
             Row(
               children: [
                 Expanded(
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(minimumSize: const Size(64, 44)),
-                    onPressed: () => _decide(false),
-                    child: const Text('Decline'),
-                  ),
+                  child: NeuButton(label: 'Decline', primary: false, height: 46, onPressed: () => _decide(false)),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 16),
                 Expanded(
-                  child: FilledButton(
-                    style: FilledButton.styleFrom(minimumSize: const Size(64, 44)),
-                    onPressed: () => _decide(true),
-                    child: const Text('Approve'),
-                  ),
+                  child: NeuButton(label: 'Approve', height: 46, onPressed: () => _decide(true)),
                 ),
               ],
             ),
@@ -196,31 +175,46 @@ class _MemberTile extends ConsumerWidget {
         ? 'Since ${AppDates.day(m.startDate)}'
         : '${AppDates.short(m.startDate)} – ${AppDates.day(m.endDate ?? m.startDate)}  ·  ${m.status.label}';
 
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      onTap: () => _showDetails(context, ref),
-      leading: MemberAvatar(name: m.displayName, muted: !m.isActive),
-      title: Row(
-        children: [
-          Flexible(
-            child: Text(
-              m.displayName,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+    final palette = NeuPalette.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: NeuPressable(
+        onTap: () => _showDetails(context, ref),
+        radius: 30,
+        depth: 5,
+        padding: const EdgeInsets.fromLTRB(10, 10, 18, 10),
+        child: Row(
+          children: [
+            MemberAvatar(name: m.displayName, muted: !m.isActive, size: 48),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    isMe ? '${m.displayName} (you)' : m.displayName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  Text(
+                    m.isManager ? 'Manager · $period' : period,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 12, color: palette.muted),
+                  ),
+                ],
+              ),
+            ),
+            AmountText(
+              balance?.netPaisa ?? 0,
+              signed: true,
+              colorize: true,
+              roundToRupee: true,
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
-          ),
-          if (isMe) ...[const SizedBox(width: 6), const Pill('You')],
-          if (m.isManager) ...[const SizedBox(width: 6), Pill('Manager', color: context.colors.tertiary)],
-        ],
-      ),
-      subtitle: Text(period),
-      trailing: AmountText(
-        balance?.netPaisa ?? 0,
-        signed: true,
-        colorize: true,
-        roundToRupee: true,
-        style: const TextStyle(fontWeight: FontWeight.w700),
+          ],
+        ),
       ),
     );
   }
@@ -349,17 +343,12 @@ class _MemberSheetState extends ConsumerState<_MemberSheet> {
             ],
             if (canRemove) ...[
               const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: context.colors.error,
-                    side: BorderSide(color: context.colors.error.withValues(alpha: 0.5)),
-                  ),
-                  onPressed: _busy ? null : _remove,
-                  icon: const Icon(Icons.person_remove_outlined),
-                  label: const Text('Remove member'),
-                ),
+              NeuButton(
+                label: 'Remove member',
+                icon: Icons.person_remove_outlined,
+                primary: false,
+                destructive: true,
+                onPressed: _busy ? null : _remove,
               ),
             ],
           ],
