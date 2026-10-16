@@ -49,3 +49,6 @@ supabase/tests/node_modules/
 
 # Local Supabase settings (copy supabase.env.example.json)
 supabase.env.json
+
+# Gradle build output
+android/build/
