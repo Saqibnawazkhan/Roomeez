@@ -128,9 +128,12 @@ supabase_flutter.
 
 ## Roadmap
 
-- **Phase 3: Release.** Push notifications (join requests, new expenses),
-  offline support, Urdu translation (and a Unicode font for Urdu text in
-  PDFs), Play Store and TestFlight builds.
+- **Phase 3: Real SMS and notifications.** Live SMS codes (Twilio, or a
+  local Pakistani gateway / WhatsApp codes), push notifications for join
+  requests, new and changed expenses.
+- **Phase 4: New UI.** Redesign based on the owner's design references.
+- **Phase 5: Urdu and release.** Urdu translation (and a Unicode font for
+  Urdu in PDFs), Play Store and App Store publishing.
 
 ## Known limitations
 
