@@ -498,7 +498,7 @@ class NeuSegmented<T> extends StatelessWidget {
                     duration: const Duration(milliseconds: 180),
                     height: 44,
                     decoration: BoxDecoration(
-                      color: palette.base,
+                      color: segment == value ? palette.base : palette.base.withValues(alpha: 0),
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: segment == value ? palette.raised(3) : null,
                     ),

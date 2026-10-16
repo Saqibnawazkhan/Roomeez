@@ -256,7 +256,7 @@ class ExpenseDetailScreen extends ConsumerWidget {
             ],
           ),
         ),
-        SectionHeader('Split between ${shares.length}'),
+        SectionHeader(shares.length == 1 ? 'For 1 person' : 'Split among ${shares.length} people'),
         AppCard(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Column(

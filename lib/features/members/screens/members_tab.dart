@@ -58,7 +58,7 @@ class MembersTab extends ConsumerWidget {
               const SizedBox(height: 16),
             ],
           ],
-          SectionHeader('Active members (${s.activeMembers.length})'),
+          const SectionHeader('Active members'),
           for (final m in s.activeMembers) _MemberTile(member: m, snapshot: s, balance: summary.balanceOf(m.userId)),
 
           if (s.formerMembers.isNotEmpty) ...[

@@ -88,7 +88,7 @@ class _ReportsTabState extends State<ReportsTab> {
                     children: [
                       Expanded(
                         child: Text(
-                          '${range.dayCount} days · ${summary.expenseCount} expenses',
+                          '${range.dayCount} days · ${summary.expenseCount} ${summary.expenseCount == 1 ? 'expense' : 'expenses'}',
                           style: TextStyle(color: context.appColors.muted),
                         ),
                       ),
