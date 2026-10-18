@@ -6,13 +6,11 @@ import '../../../app/providers.dart';
 import '../../../app/routes.dart';
 import '../../../app/theme/app_theme.dart';
 import '../../../core/errors/app_exception.dart';
-import '../../../core/utils/dates.dart';
 import '../../../core/neu/neu.dart';
 import '../../../core/widgets/common.dart';
 import '../../../core/widgets/neu_header.dart';
 import '../../../data/models/group_snapshot.dart';
 import '../../../data/services/permission_policy.dart';
-import '../../contributions/widgets/fund_card.dart';
 import '../group_providers.dart';
 import '../widgets/group_code_card.dart';
 
@@ -135,32 +133,6 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
                       )
                     : null,
               ),
-              const SectionHeader('Group fund'),
-              FundCard(snapshot: s),
-              if (s.contributions.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                NeuBox(
-                  child: Column(
-                    children: [
-                      for (final (i, c) in s.contributions.indexed) ...[
-                        if (i > 0) const Divider(indent: 16),
-                        ListTile(
-                          leading: MemberAvatar(name: s.nameOf(c.memberUserId), size: 36),
-                          title: Text(s.nameOf(c.memberUserId), style: const TextStyle(fontWeight: FontWeight.w600)),
-                          subtitle: Text(
-                            '${c.type.label}  ·  ${AppDates.day(c.date)}${c.note == null ? '' : '\n${c.note}'}',
-                          ),
-                          isThreeLine: c.note != null,
-                          trailing: AmountText(
-                            c.amountPaisa,
-                            style: TextStyle(fontWeight: FontWeight.w700, color: context.appColors.fund),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
               const SizedBox(height: 28),
               NeuButton(
                 label: 'Leave group',

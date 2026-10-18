@@ -10,6 +10,7 @@ import '../features/auth/screens/profile_setup_screen.dart';
 import '../features/auth/screens/verify_code_screen.dart';
 import '../features/auth/screens/welcome_screen.dart';
 import '../features/contributions/screens/add_contribution_screen.dart';
+import '../features/contributions/screens/group_fund_screen.dart';
 import '../features/expenses/screens/expense_detail_screen.dart';
 import '../features/expenses/screens/expense_form_screen.dart';
 import '../features/groups/screens/create_group_screen.dart';
@@ -106,6 +107,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: 'members/add',
                 builder: (context, state) => AddMemberScreen(groupId: state.pathParameters['groupId']!),
+              ),
+              GoRoute(
+                path: 'fund',
+                builder: (context, state) => GroupFundScreen(groupId: state.pathParameters['groupId']!),
               ),
               GoRoute(
                 path: 'contributions/new',

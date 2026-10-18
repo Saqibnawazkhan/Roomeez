@@ -70,6 +70,7 @@ void main() {
     '11_profile': ('u_ali', Routes.profile),
     '12_create_group': ('u_ali', Routes.createGroup),
     '13_report_preview': ('u_ali', '/g/g_apartment/report?start=2026-10-01&end=2026-10-15'),
+    '14_group_fund': ('u_ali', Routes.groupFund('g_apartment')),
   };
 
   for (final MapEntry(key: name, value: (user, location)) in screens.entries) {

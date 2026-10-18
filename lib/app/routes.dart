@@ -26,6 +26,7 @@ abstract final class Routes {
   static String editExpense(String groupId, String expenseId) => '/g/$groupId/expenses/$expenseId/edit';
   static String addMember(String groupId) => '/g/$groupId/members/add';
   static String addContribution(String groupId) => '/g/$groupId/contributions/new';
+  static String groupFund(String groupId) => '/g/$groupId/fund';
   static String report(String groupId, DateRange range) => Uri(
     path: '/g/$groupId/report',
     queryParameters: {'start': AppDates.iso(range.start), 'end': AppDates.iso(range.end)},

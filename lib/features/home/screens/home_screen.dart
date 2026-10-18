@@ -31,41 +31,27 @@ class HomeScreen extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
           children: [
-            // Header: profile and today's date (like the reference).
-            Row(
-              children: [
-                NeuIconButton(
-                  icon: Icons.person_rounded,
-                  tooltip: 'Profile',
-                  color: palette.accent,
-                  onPressed: () => context.push(Routes.profile),
-                ),
-                Expanded(
-                  child: Column(
-                    children: [
-                      Text(
-                        DateFormat('EEEE').format(now),
-                        style: TextStyle(fontSize: 24, fontWeight: FontWeight.w300, color: palette.text, height: 1.1),
-                      ),
-                      Text(
-                        DateFormat('MMM d').format(now).toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 2,
-                          color: palette.muted,
-                        ),
-                      ),
-                    ],
+            // Today's date (like the reference).
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Column(
+                children: [
+                  Text(
+                    DateFormat('EEEE').format(now),
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.w300, color: palette.text, height: 1.1),
                   ),
-                ),
-                // Keeps the date centered.
-                const SizedBox(width: 46),
-              ],
+                  Text(
+                    DateFormat('MMM d').format(now).toUpperCase(),
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 2, color: palette.muted),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 30),
+            // The one way to the profile.
             NeuPressable(
               onTap: () => context.push(Routes.profile),
+              semanticLabel: 'Profile',
               gradient: NeuHues.gradient(NeuHues.teal),
               radius: 28,
               padding: const EdgeInsets.fromLTRB(20, 22, 20, 22),
@@ -113,6 +99,7 @@ class HomeScreen extends ConsumerWidget {
                       ],
                     ),
                   ),
+                  Icon(Icons.chevron_right_rounded, color: Colors.white.withValues(alpha: 0.9)),
                 ],
               ),
             ),

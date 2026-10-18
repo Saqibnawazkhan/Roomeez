@@ -148,6 +148,36 @@ void main() {
     expect(fund.fold(0, (sum, c) => sum + c.amountPaisa), 80000);
   });
 
+  testWidgets('each dashboard card leads to its own place', (tester) async {
+    final store = await pumpApp(tester, signedInAs: 'u_ali', location: Routes.group('g_apartment'));
+    expect(find.text('SPENT THIS MONTH'), findsOneWidget);
+    for (final action in ['Add expense', 'Add money', 'Invite']) {
+      expect(find.text(action), findsOneWidget);
+    }
+
+    await tester.tap(find.text("See everyone's balance"));
+    await tester.pumpAndSettle();
+    expect(find.text('ACTIVE MEMBERS'), findsOneWidget);
+
+    await tester.tap(find.text('DASHBOARD'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Group fund'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Group fund'));
+    await tester.pumpAndSettle();
+    expect(find.text('Group fund'), findsOneWidget);
+    expect(find.text('HISTORY'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Back'));
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(ListView).first, const Offset(0, 800));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Invite'));
+    await tester.pumpAndSettle();
+    expect(find.text('Invite people'), findsOneWidget);
+    expect(find.text(store.groups['g_apartment']!.code), findsOneWidget);
+  });
+
   testWidgets('the expense list has no swipe or delete controls', (tester) async {
     await pumpApp(
       tester,
