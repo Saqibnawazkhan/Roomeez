@@ -178,6 +178,34 @@ void main() {
     expect(find.text(store.groups['g_apartment']!.code), findsOneWidget);
   });
 
+  testWidgets('expenses: one filter sheet, removable filter tags, and a floating Add expense button', (tester) async {
+    await pumpApp(
+      tester,
+      signedInAs: 'u_ali',
+      location: Routes.group('g_apartment', tab: GroupTab.expenses),
+    );
+    expect(find.byTooltip('Add expense'), findsNothing);
+    expect(find.text('Paratha and chai'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Filter'));
+    await tester.pumpAndSettle();
+    expect(find.text('Filter expenses'), findsOneWidget);
+    await tester.tap(find.widgetWithText(NeuChip, 'Bills'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining(RegExp(r'^Show \d+ expense')));
+    await tester.pumpAndSettle();
+    expect(find.text('Paratha and chai'), findsNothing);
+    expect(find.text('Gas bill (SNGPL)'), findsOneWidget);
+
+    await tester.tap(find.text('Bills'));
+    await tester.pumpAndSettle();
+    expect(find.text('Paratha and chai'), findsOneWidget);
+
+    await tester.tap(find.text('Add expense'));
+    await tester.pumpAndSettle();
+    expect(find.text('Review & save'), findsOneWidget);
+  });
+
   testWidgets('the expense list has no swipe or delete controls', (tester) async {
     await pumpApp(
       tester,

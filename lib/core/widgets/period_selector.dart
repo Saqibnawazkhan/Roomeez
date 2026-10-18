@@ -12,12 +12,16 @@ class PeriodSelector extends StatelessWidget {
     required this.onChanged,
     this.presets = PeriodPreset.values,
     this.padding = const EdgeInsets.fromLTRB(16, 10, 16, 14),
+    this.wrap = false,
   });
 
   final PeriodFilter value;
   final ValueChanged<PeriodFilter> onChanged;
   final List<PeriodPreset> presets;
   final EdgeInsetsGeometry padding;
+
+  /// Lays the chips out over several lines instead of one scrolling row.
+  final bool wrap;
 
   Future<void> _pickCustom(BuildContext context) async {
     final now = today();
@@ -36,32 +40,36 @@ class PeriodSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final chips = [
+      for (final preset in presets)
+        NeuChip(
+          label: preset == PeriodPreset.custom && value.preset == PeriodPreset.custom
+              ? AppDates.range(value.customRange!)
+              : preset.label,
+          leading: preset == PeriodPreset.custom
+              ? Icon(Icons.date_range, size: 18, color: NeuPalette.of(context).muted)
+              : null,
+          selected: value.preset == preset,
+          onTap: () {
+            if (preset == PeriodPreset.custom) {
+              _pickCustom(context);
+            } else {
+              onChanged(PeriodFilter(preset));
+            }
+          },
+        ),
+    ];
+    if (wrap) {
+      return Padding(
+        padding: padding,
+        child: Wrap(spacing: 12, runSpacing: 12, children: chips),
+      );
+    }
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: padding,
       child: Row(
-        children: [
-          for (final preset in presets)
-            Padding(
-              padding: const EdgeInsets.only(right: 12),
-              child: NeuChip(
-                label: preset == PeriodPreset.custom && value.preset == PeriodPreset.custom
-                    ? AppDates.range(value.customRange!)
-                    : preset.label,
-                leading: preset == PeriodPreset.custom
-                    ? Icon(Icons.date_range, size: 18, color: NeuPalette.of(context).muted)
-                    : null,
-                selected: value.preset == preset,
-                onTap: () {
-                  if (preset == PeriodPreset.custom) {
-                    _pickCustom(context);
-                  } else {
-                    onChanged(PeriodFilter(preset));
-                  }
-                },
-              ),
-            ),
-        ],
+        children: [for (final chip in chips) Padding(padding: const EdgeInsets.only(right: 12), child: chip)],
       ),
     );
   }

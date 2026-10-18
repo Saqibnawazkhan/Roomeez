@@ -81,6 +81,21 @@ void main() {
     }, skip: !_enabled);
   }
 
+  testWidgets('05b_expense_filters', (tester) async {
+    final router = await _pump(tester, user: 'u_ali');
+    router.go(Routes.group('g_apartment', tab: GroupTab.expenses));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Filter'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(NeuChip, 'This month'));
+    await tester.tap(find.widgetWithText(NeuChip, 'Bills'));
+    await tester.pumpAndSettle();
+    await _shot(tester, '05b_expense_filters');
+    await tester.tap(find.textContaining(RegExp(r'^Show \d+ expense')));
+    await tester.pumpAndSettle();
+    await _shot(tester, '05c_expenses_filtered');
+  }, skip: !_enabled);
+
   testWidgets('12b_create_group_filled', (tester) async {
     final router = await _pump(tester, user: 'u_ali');
     router.go(Routes.createGroup);
