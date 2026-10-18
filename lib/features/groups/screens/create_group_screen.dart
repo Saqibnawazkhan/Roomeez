@@ -7,6 +7,7 @@ import '../../../app/providers.dart';
 import '../../../app/routes.dart';
 import '../../../core/errors/app_exception.dart';
 import '../../../core/neu/neu.dart';
+import '../../../core/utils/haptics.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/utils/phone.dart';
 import '../../../core/widgets/common.dart';
@@ -274,7 +275,10 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
                       Switch(
                         value: _withFund,
                         activeTrackColor: NeuHues.violet,
-                        onChanged: (v) => setState(() => _withFund = v),
+                        onChanged: (v) {
+                          Haptics.select();
+                          setState(() => _withFund = v);
+                        },
                       ),
                     ],
                   ),

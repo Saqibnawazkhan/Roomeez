@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../utils/haptics.dart';
+
 // -----------------------------------------------------------------------------
 // Neumorphism: every surface has the background color and is shaped only by
 // light. A raised element has a light shadow up-left and a dark shadow
@@ -324,7 +326,7 @@ class _NeuPressableState extends State<NeuPressable> {
         onTap: widget.onTap == null
             ? null
             : () {
-                HapticFeedback.selectionClick();
+                Haptics.tap();
                 widget.onTap!();
               },
         child: Opacity(
@@ -401,7 +403,7 @@ class _NeuButtonState extends State<NeuButton> {
         onTapCancel: enabled ? () => setState(() => _down = false) : null,
         onTap: enabled
             ? () {
-                HapticFeedback.lightImpact();
+                Haptics.tap();
                 widget.onPressed!();
               }
             : null,
@@ -608,7 +610,10 @@ class NeuSegmented<T> extends StatelessWidget {
                 selected: segment == value,
                 child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
-                  onTap: () => onChanged(segment),
+                  onTap: () {
+                    if (segment != value) Haptics.select();
+                    onChanged(segment);
+                  },
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
                     height: 44,
@@ -788,7 +793,10 @@ class NeuBottomNav extends StatelessWidget {
                     excludeSemantics: true,
                     child: GestureDetector(
                       behavior: HitTestBehavior.opaque,
-                      onTap: () => onTap(i),
+                      onTap: () {
+                        Haptics.select();
+                        onTap(i);
+                      },
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -992,7 +1000,10 @@ class NeuPickerField extends StatelessWidget {
       excludeSemantics: true,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: onTap,
+        onTap: () {
+          Haptics.tap();
+          onTap();
+        },
         child: NeuBox(
           style: NeuStyle.inset,
           radius: 18,

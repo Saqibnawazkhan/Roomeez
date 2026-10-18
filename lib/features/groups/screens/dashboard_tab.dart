@@ -7,6 +7,7 @@ import '../../../app/routes.dart';
 import '../../../app/theme/app_theme.dart';
 import '../../../core/neu/neu.dart';
 import '../../../core/utils/dates.dart';
+import '../../../core/utils/haptics.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/widgets/common.dart';
 import '../../../core/widgets/neu_header.dart';
@@ -121,7 +122,10 @@ class DashboardTab extends ConsumerWidget {
             trailing: recent.isEmpty
                 ? null
                 : GestureDetector(
-                    onTap: () => onOpenTab(GroupTab.expenses),
+                    onTap: () {
+                      Haptics.tap();
+                      onOpenTab(GroupTab.expenses);
+                    },
                     child: Text(
                       'See all',
                       style: TextStyle(color: palette.accent, fontWeight: FontWeight.w600),

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../app/routes.dart';
 import '../../../core/neu/neu.dart';
 import '../../../core/utils/dates.dart';
+import '../../../core/utils/haptics.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/widgets/category_icon.dart';
 import '../../../core/widgets/common.dart';
@@ -170,7 +171,10 @@ class _ExpensesTabState extends State<ExpensesTab> {
                     onRemove: () => setState(() => _filters = _filters.withMember(null)),
                   ),
                 GestureDetector(
-                  onTap: () => setState(() => _filters = const _Filters()),
+                  onTap: () {
+                    Haptics.tap();
+                    setState(() => _filters = const _Filters());
+                  },
                   child: Padding(
                     padding: const EdgeInsets.all(6),
                     child: Text(

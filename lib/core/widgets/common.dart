@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../app/theme/app_theme.dart';
+import '../utils/haptics.dart';
 import '../errors/app_exception.dart';
 import '../neu/neu.dart';
 import '../utils/money.dart';
@@ -328,6 +329,7 @@ class BottomActionBar extends StatelessWidget {
 }
 
 void showAppSnack(BuildContext context, String message, {bool isError = false}) {
+  isError ? Haptics.error() : Haptics.success();
   final messenger = ScaffoldMessenger.of(context);
   messenger.hideCurrentSnackBar();
   messenger.showSnackBar(
@@ -352,7 +354,13 @@ Future<bool> showConfirmDialog(
       title: Text(title),
       content: Text(message),
       actions: [
-        TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancel')),
+        TextButton(
+          onPressed: () {
+            Haptics.tap();
+            Navigator.of(context).pop(false);
+          },
+          child: const Text('Cancel'),
+        ),
         FilledButton(
           style: destructive
               ? FilledButton.styleFrom(
@@ -361,7 +369,10 @@ Future<bool> showConfirmDialog(
                   minimumSize: const Size(64, 44),
                 )
               : FilledButton.styleFrom(minimumSize: const Size(64, 44)),
-          onPressed: () => Navigator.of(context).pop(true),
+          onPressed: () {
+            Haptics.tap();
+            Navigator.of(context).pop(true);
+          },
           child: Text(confirmLabel),
         ),
       ],

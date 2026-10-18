@@ -7,6 +7,7 @@ import '../../../app/theme/app_theme.dart';
 import '../../../core/neu/neu.dart';
 import '../../../core/errors/app_exception.dart';
 import '../../../core/utils/dates.dart';
+import '../../../core/utils/haptics.dart';
 import '../../../core/utils/money.dart';
 import '../../../core/utils/quantity.dart';
 import '../../../core/widgets/category_icon.dart';
@@ -417,6 +418,7 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
             'Who shares it?',
             trailing: GestureDetector(
               onTap: () => setState(() {
+                Haptics.tap();
                 _splitTouched = true;
                 _split = allSelected ? {} : {...eligibleIds};
               }),
@@ -487,7 +489,10 @@ class _ModeLink extends StatelessWidget {
       alignment: Alignment.centerLeft,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: onTap,
+        onTap: () {
+          Haptics.tap();
+          onTap();
+        },
         child: Padding(
           padding: const EdgeInsets.fromLTRB(6, 12, 6, 6),
           child: Row(
