@@ -62,10 +62,19 @@ class NeuPalette extends ThemeExtension<NeuPalette> {
 
   static NeuPalette of(BuildContext context) => Theme.of(context).extension<NeuPalette>() ?? light;
 
-  List<BoxShadow> raised([double depth = 6]) => [
+  /// A raised element's two shadows. A colored element passes its [tint] so
+  /// its dark shadow glows softly in that color.
+  List<BoxShadow> raised([double depth = 6, Color? tint]) => [
     BoxShadow(color: highlight, offset: Offset(-depth, -depth), blurRadius: depth * 2.2),
-    BoxShadow(color: shade.withValues(alpha: 0.55), offset: Offset(depth, depth), blurRadius: depth * 2.2),
+    BoxShadow(
+      color: tint == null ? shade.withValues(alpha: 0.55) : tint.withValues(alpha: 0.4),
+      offset: Offset(depth, depth),
+      blurRadius: depth * 2.2,
+    ),
   ];
+
+  /// A pale version of [hue] on this surface, for icon discs and soft fills.
+  Color tint(Color hue, [double amount = 0.16]) => Color.lerp(base, hue, amount)!;
 
   @override
   NeuPalette copyWith({
@@ -101,6 +110,32 @@ class NeuPalette extends ThemeExtension<NeuPalette> {
       accentSoft: Color.lerp(accentSoft, other.accentSoft, t)!,
     );
   }
+}
+
+/// Soft accent hues. Each part of the app has its own so screens feel alive
+/// without getting loud: icons sit in pale discs of their hue, and a few key
+/// cards use its gradient.
+abstract final class NeuHues {
+  static const teal = Color(0xFF2FAFAD);
+  static const indigo = Color(0xFF6A78E8);
+  static const coral = Color(0xFFEE8A6A);
+  static const amber = Color(0xFFE5A03A);
+  static const violet = Color(0xFF9A6BDB);
+  static const sky = Color(0xFF3E95CF);
+  static const green = Color(0xFF3FA36E);
+  static const rose = Color(0xFFD2668E);
+
+  static const _named = [teal, indigo, coral, violet, sky, amber, green, rose];
+
+  /// A stable hue for something without its own, e.g. a group.
+  static Color forName(String name) => _named[name.codeUnits.fold<int>(0, (a, b) => a + b) % _named.length];
+
+  /// [hue] fading to a lighter version of itself.
+  static LinearGradient gradient(Color hue) => LinearGradient(
+    colors: [hue, Color.lerp(hue, Colors.white, 0.42)!],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
 }
 
 enum NeuStyle { raised, inset, flat }
@@ -154,9 +189,36 @@ class NeuBox extends StatelessWidget {
         gradient: gradient,
         shape: circle ? BoxShape.circle : BoxShape.rectangle,
         borderRadius: circle ? null : BorderRadius.circular(radius),
-        boxShadow: style == NeuStyle.raised ? palette.raised(depth) : null,
+        boxShadow: style == NeuStyle.raised ? palette.raised(depth, gradient?.colors.first) : null,
       ),
       child: content,
+    );
+  }
+}
+
+/// A small raised disc with a pale [color] fill and the icon in [color].
+class NeuIconDisc extends StatelessWidget {
+  const NeuIconDisc({super.key, required this.icon, required this.color, this.size = 40});
+
+  final IconData icon;
+  final Color color;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = NeuPalette.of(context);
+    return NeuBox(
+      circle: true,
+      depth: size / 12,
+      width: size,
+      height: size,
+      padding: EdgeInsets.all(size * 0.09),
+      child: DecoratedBox(
+        decoration: BoxDecoration(shape: BoxShape.circle, color: palette.tint(color)),
+        child: Center(
+          child: Icon(icon, size: size * 0.42, color: color),
+        ),
+      ),
     );
   }
 }
@@ -217,6 +279,7 @@ class NeuPressable extends StatefulWidget {
     this.width,
     this.height,
     this.semanticLabel,
+    this.gradient,
   });
 
   final Widget child;
@@ -229,6 +292,9 @@ class NeuPressable extends StatefulWidget {
   final double? width;
   final double? height;
   final String? semanticLabel;
+
+  /// A colored fill; such a surface flattens instead of pressing in.
+  final Gradient? gradient;
 
   @override
   State<NeuPressable> createState() => _NeuPressableState();
@@ -264,7 +330,8 @@ class _NeuPressableState extends State<NeuPressable> {
         child: Opacity(
           opacity: widget.onTap == null && !widget.selected ? 0.55 : 1,
           child: NeuBox(
-            style: pressed ? NeuStyle.inset : NeuStyle.raised,
+            style: pressed ? (widget.gradient == null ? NeuStyle.inset : NeuStyle.flat) : NeuStyle.raised,
+            gradient: widget.gradient,
             radius: widget.radius,
             circle: widget.circle,
             depth: widget.depth,
@@ -392,6 +459,7 @@ class NeuIconButton extends StatelessWidget {
     this.size = 46,
     this.selected = false,
     this.color,
+    this.hue,
     this.child,
   });
 
@@ -402,22 +470,28 @@ class NeuIconButton extends StatelessWidget {
   final bool selected;
   final Color? color;
 
+  /// When [selected], the button fills with this hue instead of pressing in.
+  final Color? hue;
+
   /// Replaces the icon (e.g. an avatar).
   final Widget? child;
 
   @override
   Widget build(BuildContext context) {
     final palette = NeuPalette.of(context);
+    final filled = selected && hue != null;
+    final iconColor = filled ? Colors.white : color ?? (selected ? palette.accent : palette.muted);
     final button = NeuPressable(
       onTap: onPressed,
-      selected: selected,
+      selected: selected && !filled,
+      gradient: filled ? NeuHues.gradient(hue!) : null,
       circle: true,
       depth: size / 10,
       width: size,
       height: size,
       semanticLabel: tooltip,
       child: Center(
-        child: child ?? Icon(icon, size: size * 0.44, color: color ?? (selected ? palette.accent : palette.muted)),
+        child: child ?? Icon(icon, size: size * 0.44, color: iconColor),
       ),
     );
     return tooltip == null ? button : Tooltip(message: tooltip!, child: button);
@@ -536,12 +610,15 @@ class NeuSegmented<T> extends StatelessWidget {
 /// A pressed-in track filled with the accent gradient up to [value] (0–1),
 /// with a raised knob, like the slider in the reference design.
 class NeuProgress extends StatelessWidget {
-  const NeuProgress({super.key, required this.value, this.startLabel, this.endLabel, this.height = 48});
+  const NeuProgress({super.key, required this.value, this.startLabel, this.endLabel, this.height = 48, this.hue});
 
   final double value;
   final String? startLabel;
   final String? endLabel;
   final double height;
+
+  /// Fill color; the accent by default.
+  final Color? hue;
 
   @override
   Widget build(BuildContext context) {
@@ -565,7 +642,7 @@ class NeuProgress extends StatelessWidget {
                 width: fill - 8,
                 child: DecoratedBox(
                   decoration: BoxDecoration(
-                    gradient: palette.accentGradient,
+                    gradient: hue == null ? palette.accentGradient : NeuHues.gradient(hue!),
                     borderRadius: BorderRadius.circular(height / 2),
                   ),
                 ),
@@ -580,7 +657,7 @@ class NeuProgress extends StatelessWidget {
                     child: Text(
                       startLabel!,
                       style: TextStyle(
-                        color: fill - knob - 4 > 64 ? Colors.white : palette.accent,
+                        color: fill - knob - 4 > 64 ? Colors.white : hue ?? palette.accent,
                         fontWeight: FontWeight.w600,
                         fontSize: 13,
                       ),
@@ -640,11 +717,14 @@ class NeuSectionLabel extends StatelessWidget {
 /// Round raised buttons with small labels, used as the group's bottom
 /// navigation.
 class NeuBottomNav extends StatelessWidget {
-  const NeuBottomNav({super.key, required this.items, required this.index, required this.onTap});
+  const NeuBottomNav({super.key, required this.items, required this.index, required this.onTap, this.hues});
 
   final List<(IconData, String, int)> items;
   final int index;
   final ValueChanged<int> onTap;
+
+  /// One hue per item; the selected item fills with its hue.
+  final List<Color>? hues;
 
   @override
   Widget build(BuildContext context) {
@@ -675,7 +755,13 @@ class NeuBottomNav extends StatelessWidget {
                             isLabelVisible: badge > 0,
                             label: Text('$badge'),
                             offset: const Offset(-2, 2),
-                            child: NeuIconButton(icon: icon, onPressed: () => onTap(i), selected: i == index, size: 50),
+                            child: NeuIconButton(
+                              icon: icon,
+                              onPressed: () => onTap(i),
+                              selected: i == index,
+                              hue: hues?[i],
+                              size: 50,
+                            ),
                           ),
                           const SizedBox(height: 6),
                           FittedBox(
@@ -687,7 +773,7 @@ class NeuBottomNav extends StatelessWidget {
                                 fontSize: 10,
                                 letterSpacing: 1.4,
                                 fontWeight: FontWeight.w600,
-                                color: i == index ? palette.accent : palette.muted,
+                                color: i == index ? (hues?[i] ?? palette.accent) : palette.muted,
                               ),
                             ),
                           ),

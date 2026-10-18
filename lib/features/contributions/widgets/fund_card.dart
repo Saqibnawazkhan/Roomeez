@@ -36,6 +36,7 @@ class FundCard extends StatelessWidget {
                   ? '0%'
                   : '${(fund.remainingPaisa * 100 / fund.contributedPaisa).round().clamp(0, 100)}%',
               endLabel: '100%',
+              hue: NeuHues.violet,
             ),
             const SizedBox(height: 16),
             Row(
@@ -75,7 +76,11 @@ class FundCard extends StatelessWidget {
             paisa,
             style: context.text.titleSmall?.copyWith(
               fontWeight: emphasize ? FontWeight.w700 : FontWeight.w500,
-              color: paisa < 0 ? colors.negative : NeuPalette.of(context).text,
+              color: paisa < 0
+                  ? colors.negative
+                  : emphasize
+                  ? NeuHues.violet
+                  : NeuPalette.of(context).text,
             ),
           ),
         ),

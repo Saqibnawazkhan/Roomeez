@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/providers.dart';
 import '../../../app/routes.dart';
+import '../../../app/theme/app_theme.dart';
 import '../../../core/neu/neu.dart';
 import '../../../core/utils/dates.dart';
 import '../../../core/utils/money.dart';
@@ -81,7 +82,7 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
                     padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
                     child: Row(
                       children: [
-                        Icon(Icons.person_add_alt_1_rounded, color: palette.accent, size: 22),
+                        const NeuIconDisc(icon: Icons.person_add_alt_1_rounded, color: NeuHues.indigo, size: 40),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
@@ -91,9 +92,10 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
                             style: const TextStyle(fontWeight: FontWeight.w500),
                           ),
                         ),
-                        Text(
+                        const SizedBox(width: 10),
+                        const Text(
                           'Review',
-                          style: TextStyle(color: palette.accent, fontWeight: FontWeight.w600),
+                          style: TextStyle(color: NeuHues.indigo, fontWeight: FontWeight.w600),
                         ),
                       ],
                     ),
@@ -113,6 +115,7 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
                               ? '0%'
                               : '${(fund.remainingPaisa * 100 / fund.contributedPaisa).round().clamp(0, 100)}%',
                           endLabel: '100%',
+                          hue: NeuHues.violet,
                         ),
                         const SizedBox(height: 10),
                         Padding(
@@ -142,12 +145,12 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
                     padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
                     child: Row(
                       children: [
-                        Icon(Icons.savings_outlined, color: palette.accent),
+                        const NeuIconDisc(icon: Icons.savings_rounded, color: NeuHues.violet, size: 40),
                         const SizedBox(width: 12),
                         const Expanded(child: Text('No group fund yet')),
-                        Text(
+                        const Text(
                           'Add money',
-                          style: TextStyle(color: palette.accent, fontWeight: FontWeight.w600),
+                          style: TextStyle(color: NeuHues.violet, fontWeight: FontWeight.w600),
                         ),
                       ],
                     ),
@@ -173,6 +176,7 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
                                 title: 'Members',
                                 value: '${s.activeMembers.length}',
                                 icon: Icons.group_rounded,
+                                hue: NeuHues.indigo,
                                 onTap: () => widget.onOpenTab(GroupTab.members),
                               ),
                             ),
@@ -182,6 +186,7 @@ class _DashboardTabState extends ConsumerState<DashboardTab> {
                                 title: 'Group code',
                                 value: s.group.code,
                                 icon: Icons.copy_rounded,
+                                hue: NeuHues.amber,
                                 onTap: () async {
                                   await Clipboard.setData(ClipboardData(text: s.group.code));
                                   if (context.mounted) showAppSnack(context, 'Code copied');
@@ -226,9 +231,9 @@ class _TotalCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = NeuPalette.of(context);
     return NeuBox(
       radius: 28,
+      gradient: NeuHues.gradient(NeuHues.teal),
       padding: const EdgeInsets.fromLTRB(22, 20, 18, 20),
       child: Row(
         children: [
@@ -238,7 +243,12 @@ class _TotalCard extends StatelessWidget {
               children: [
                 Text(
                   'TOTAL SPENT',
-                  style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, letterSpacing: 2, color: palette.muted),
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 2,
+                    color: Colors.white.withValues(alpha: 0.85),
+                  ),
                 ),
                 const SizedBox(height: 6),
                 FittedBox(
@@ -246,13 +256,13 @@ class _TotalCard extends StatelessWidget {
                   alignment: Alignment.centerLeft,
                   child: AmountText(
                     summary.totalExpensesPaisa,
-                    style: TextStyle(fontSize: 34, fontWeight: FontWeight.w300, color: palette.text, height: 1.1),
+                    style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w400, color: Colors.white, height: 1.1),
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '${summary.expenseCount} ${summary.expenseCount == 1 ? 'expense' : 'expenses'}',
-                  style: TextStyle(color: palette.muted, fontSize: 13),
+                  style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 13),
                 ),
               ],
             ),
@@ -266,15 +276,21 @@ class _TotalCard extends StatelessWidget {
                 excludeSemantics: true,
                 child: GestureDetector(
                   onTap: onAdd,
-                  child: NeuBox(
-                    circle: true,
-                    width: 62,
-                    height: 62,
-                    padding: const EdgeInsets.all(7),
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(shape: BoxShape.circle, gradient: palette.accentGradient),
-                      child: const Icon(Icons.add_rounded, color: Colors.white, size: 30),
+                  child: Container(
+                    width: 58,
+                    height: 58,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.12),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
+                    child: const Icon(Icons.add_rounded, color: NeuHues.teal, size: 30),
                   ),
                 ),
               ),
@@ -318,7 +334,36 @@ class _BalanceCard extends StatelessWidget {
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
             ),
           ),
+          const SizedBox(height: 8),
+          _StatusPill(net: net),
         ],
+      ),
+    );
+  }
+}
+
+/// "You get back", "You owe" or "All settled", in the balance's color.
+class _StatusPill extends StatelessWidget {
+  const _StatusPill({required this.net});
+
+  final int net;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = NeuPalette.of(context);
+    final colors = context.appColors;
+    final rupees = (net.abs() + 50) ~/ 100;
+    final (label, color) = rupees == 0
+        ? ('All settled', palette.muted)
+        : net > 0
+        ? ('You get back', colors.positive)
+        : ('You owe', colors.negative);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(color: palette.tint(color, 0.18), borderRadius: BorderRadius.circular(20)),
+      child: Text(
+        label,
+        style: TextStyle(color: color, fontSize: 11.5, fontWeight: FontWeight.w600),
       ),
     );
   }
@@ -326,11 +371,18 @@ class _BalanceCard extends StatelessWidget {
 
 /// Like the Wi-Fi / Bluetooth cards in the reference.
 class _SmallCard extends StatelessWidget {
-  const _SmallCard({required this.title, required this.value, required this.icon, required this.onTap});
+  const _SmallCard({
+    required this.title,
+    required this.value,
+    required this.icon,
+    required this.hue,
+    required this.onTap,
+  });
 
   final String title;
   final String value;
   final IconData icon;
+  final Color hue;
   final VoidCallback onTap;
 
   @override
@@ -358,13 +410,7 @@ class _SmallCard extends StatelessWidget {
                   style: TextStyle(color: palette.muted, fontSize: 13, letterSpacing: 0.5),
                 ),
               ),
-              NeuBox(
-                style: NeuStyle.inset,
-                circle: true,
-                width: 30,
-                height: 30,
-                child: Icon(icon, size: 15, color: palette.accent),
-              ),
+              NeuIconDisc(icon: icon, color: hue, size: 36),
             ],
           ),
         ],

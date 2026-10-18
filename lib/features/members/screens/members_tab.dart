@@ -43,7 +43,7 @@ class MembersTab extends ConsumerWidget {
             NeuIconButton(
               icon: Icons.person_add_alt_1_rounded,
               tooltip: 'Add member',
-              color: NeuPalette.of(context).accent,
+              color: NeuHues.indigo,
               onPressed: () => context.push(Routes.addMember(s.group.id)),
             ),
         ],

@@ -135,7 +135,7 @@ class _ExpensesTabState extends State<ExpensesTab> {
             NeuIconButton(
               icon: Icons.add_rounded,
               tooltip: 'Add expense',
-              color: NeuPalette.of(context).accent,
+              color: NeuHues.coral,
               onPressed: () => context.push(Routes.addExpense(s.group.id)),
             ),
         ],

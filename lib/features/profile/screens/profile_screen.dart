@@ -51,7 +51,7 @@ class ProfileScreen extends ConsumerWidget {
           const SizedBox(height: 24),
           NeuBox(
             child: ListTile(
-              leading: const Icon(Icons.edit_outlined),
+              leading: const NeuIconDisc(icon: Icons.edit_rounded, color: NeuHues.teal),
               title: const Text('Edit profile'),
               subtitle: const Text('Name, mobile number'),
               trailing: const Icon(Icons.chevron_right),
@@ -62,7 +62,7 @@ class ProfileScreen extends ConsumerWidget {
             const SectionHeader('Demo'),
             NeuBox(
               child: ListTile(
-                leading: const Icon(Icons.swap_horiz),
+                leading: const NeuIconDisc(icon: Icons.swap_horiz_rounded, color: NeuHues.indigo),
                 title: const Text('Switch demo user'),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => showSampleUserSheet(context, ref),

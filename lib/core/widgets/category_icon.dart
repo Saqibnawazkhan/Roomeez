@@ -37,12 +37,6 @@ class CategoryIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = muted ? NeuPalette.of(context).muted.withValues(alpha: 0.6) : category.color;
-    return NeuBox(
-      circle: true,
-      depth: size / 11,
-      width: size,
-      height: size,
-      child: Icon(category.icon, color: color, size: size * 0.46),
-    );
+    return NeuIconDisc(icon: category.icon, color: color, size: size);
   }
 }

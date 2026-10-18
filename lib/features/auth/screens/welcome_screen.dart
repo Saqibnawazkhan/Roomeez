@@ -35,9 +35,10 @@ class WelcomeScreen extends ConsumerWidget {
                       depth: 12,
                       padding: const EdgeInsets.all(26),
                       child: NeuBox(
-                        style: NeuStyle.inset,
                         circle: true,
-                        child: Center(child: Icon(Icons.home_work_rounded, size: 46, color: palette.accent)),
+                        depth: 5,
+                        gradient: NeuHues.gradient(NeuHues.teal),
+                        child: const Center(child: Icon(Icons.home_work_rounded, size: 46, color: Colors.white)),
                       ),
                     ),
                     const SizedBox(height: 34),

@@ -58,6 +58,7 @@ class _GroupShellScreenState extends ConsumerState<GroupShellScreen> {
         bottomNavigationBar: NeuBottomNav(
           index: _tab.index,
           onTap: (index) => _select(GroupTab.values[index]),
+          hues: const [NeuHues.teal, NeuHues.coral, NeuHues.amber, NeuHues.indigo],
           items: [
             (Icons.space_dashboard_rounded, 'Dashboard', 0),
             (Icons.receipt_long_rounded, 'Expenses', 0),

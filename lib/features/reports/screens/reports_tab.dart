@@ -86,6 +86,8 @@ class _ReportsTabState extends State<ReportsTab> {
                 AppCard(
                   child: Row(
                     children: [
+                      const NeuIconDisc(icon: Icons.insert_chart_rounded, color: NeuHues.amber, size: 40),
+                      const SizedBox(width: 14),
                       Expanded(
                         child: Text(
                           '${range.dayCount} days · ${summary.expenseCount} ${summary.expenseCount == 1 ? 'expense' : 'expenses'}',

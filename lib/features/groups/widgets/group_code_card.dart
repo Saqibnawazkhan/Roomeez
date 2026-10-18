@@ -58,7 +58,7 @@ class _GroupCodeCardState extends State<GroupCodeCard> {
             style: context.text.displaySmall?.copyWith(
               fontWeight: FontWeight.w600,
               letterSpacing: 6,
-              color: context.colors.primary,
+              color: NeuHues.amber,
             ),
           ),
           const SizedBox(height: 18),

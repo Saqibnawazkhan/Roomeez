@@ -37,6 +37,7 @@ class HomeScreen extends ConsumerWidget {
                 NeuIconButton(
                   icon: Icons.person_rounded,
                   tooltip: 'Profile',
+                  color: palette.accent,
                   onPressed: () => context.push(Routes.profile),
                 ),
                 Expanded(
@@ -65,11 +66,25 @@ class HomeScreen extends ConsumerWidget {
             const SizedBox(height: 30),
             NeuPressable(
               onTap: () => context.push(Routes.profile),
+              gradient: NeuHues.gradient(NeuHues.teal),
               radius: 28,
               padding: const EdgeInsets.fromLTRB(20, 22, 20, 22),
               child: Row(
                 children: [
-                  MemberAvatar(name: user?.name ?? '?', size: 84),
+                  Container(
+                    width: 80,
+                    height: 80,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withValues(alpha: 0.22),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.55), width: 2),
+                    ),
+                    child: Text(
+                      MemberAvatar.initials(user?.name ?? '?'),
+                      style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w600),
+                    ),
+                  ),
                   const SizedBox(width: 20),
                   Expanded(
                     child: Column(
@@ -79,7 +94,12 @@ class HomeScreen extends ConsumerWidget {
                           'Hi, $firstName!',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontSize: 24, fontWeight: FontWeight.w400, color: palette.text, height: 1.2),
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white,
+                            height: 1.2,
+                          ),
                         ),
                         if (user?.email != null) ...[
                           const SizedBox(height: 4),
@@ -87,7 +107,7 @@ class HomeScreen extends ConsumerWidget {
                             user!.email!,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(fontSize: 13, color: palette.muted),
+                            style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.85)),
                           ),
                         ],
                       ],
@@ -97,29 +117,34 @@ class HomeScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 22),
-            SizedBox(
-              height: 104,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(
-                    child: _ActionCard(
-                      title: 'Create group',
-                      subtitle: 'Flat or room',
-                      icon: Icons.add_home_work_rounded,
-                      onTap: () => context.push(Routes.createGroup),
+            // At least 104 tall; taller if a title wraps on a narrow screen.
+            ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 104),
+              child: IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      child: _ActionCard(
+                        title: 'Create group',
+                        subtitle: 'Flat or room',
+                        icon: Icons.add_home_work_rounded,
+                        hue: NeuHues.indigo,
+                        onTap: () => context.push(Routes.createGroup),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 18),
-                  Expanded(
-                    child: _ActionCard(
-                      title: 'Join group',
-                      subtitle: 'With a code',
-                      icon: Icons.group_add_rounded,
-                      onTap: () => context.push(Routes.joinGroup),
+                    const SizedBox(width: 18),
+                    Expanded(
+                      child: _ActionCard(
+                        title: 'Join group',
+                        subtitle: 'With a code',
+                        icon: Icons.group_add_rounded,
+                        hue: NeuHues.coral,
+                        onTap: () => context.push(Routes.joinGroup),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
             if (pending.isNotEmpty) ...[
@@ -133,13 +158,7 @@ class HomeScreen extends ConsumerWidget {
                     padding: const EdgeInsets.fromLTRB(12, 12, 18, 12),
                     child: Row(
                       children: [
-                        NeuBox(
-                          style: NeuStyle.inset,
-                          circle: true,
-                          width: 44,
-                          height: 44,
-                          child: Icon(Icons.hourglass_top_rounded, color: palette.accent, size: 20),
-                        ),
+                        const NeuIconDisc(icon: Icons.hourglass_top_rounded, color: NeuHues.amber, size: 44),
                         const SizedBox(width: 14),
                         Expanded(
                           child: Column(
@@ -179,11 +198,18 @@ class HomeScreen extends ConsumerWidget {
 
 /// Like the Wi-Fi / Bluetooth cards in the reference.
 class _ActionCard extends StatelessWidget {
-  const _ActionCard({required this.title, required this.subtitle, required this.icon, required this.onTap});
+  const _ActionCard({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.hue,
+    required this.onTap,
+  });
 
   final String title;
   final String subtitle;
   final IconData icon;
+  final Color hue;
   final VoidCallback onTap;
 
   @override
@@ -201,18 +227,13 @@ class _ActionCard extends StatelessWidget {
             title,
             style: TextStyle(fontWeight: FontWeight.w600, color: palette.text, fontSize: 14.5),
           ),
+          const SizedBox(height: 10),
           Row(
             children: [
               Expanded(
                 child: Text(subtitle, style: TextStyle(color: palette.muted, fontSize: 12)),
               ),
-              NeuBox(
-                style: NeuStyle.inset,
-                circle: true,
-                width: 32,
-                height: 32,
-                child: Icon(icon, size: 16, color: palette.accent),
-              ),
+              NeuIconDisc(icon: icon, color: hue, size: 40),
             ],
           ),
         ],
@@ -257,13 +278,7 @@ class _GroupCard extends ConsumerWidget {
           children: [
             Row(
               children: [
-                NeuBox(
-                  circle: true,
-                  width: 52,
-                  height: 52,
-                  depth: 4,
-                  child: Icon(Icons.home_work_rounded, color: palette.accent, size: 24),
-                ),
+                NeuIconDisc(icon: Icons.home_work_rounded, color: NeuHues.forName(group.name), size: 52),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Column(

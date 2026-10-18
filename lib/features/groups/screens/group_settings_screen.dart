@@ -97,21 +97,29 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
             children: [
               AppCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Row(
                   children: [
-                    Text(s.group.name, style: context.text.titleLarge?.copyWith(fontWeight: FontWeight.w500)),
-                    if (s.group.description != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        s.group.description!,
-                        style: context.text.bodyMedium?.copyWith(color: context.appColors.muted),
+                    NeuIconDisc(icon: Icons.home_work_rounded, color: NeuHues.forName(s.group.name), size: 52),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(s.group.name, style: context.text.titleLarge?.copyWith(fontWeight: FontWeight.w500)),
+                          if (s.group.description != null) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              s.group.description!,
+                              style: context.text.bodyMedium?.copyWith(color: context.appColors.muted),
+                            ),
+                          ],
+                          const SizedBox(height: 8),
+                          Text(
+                            'Manager: ${s.manager?.displayName ?? 'None'}',
+                            style: context.text.bodySmall?.copyWith(color: context.appColors.muted),
+                          ),
+                        ],
                       ),
-                    ],
-                    const SizedBox(height: 8),
-                    Text(
-                      'Manager: ${s.manager?.displayName ?? 'None'}',
-                      style: context.text.bodySmall?.copyWith(color: context.appColors.muted),
                     ),
                   ],
                 ),
