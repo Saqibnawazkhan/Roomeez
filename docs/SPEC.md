@@ -19,6 +19,7 @@ the first review; the rest of the document has been updated to match.
 | 10 | Database | **Supabase (PostgreSQL)** for the production backend (Phase 2). Firebase is not used. |
 | 11 | PDF | A one-page summary generated on the device with the `pdf` package, in the app's neumorphic style: totals, balances, spending by category and the expense list (condensed to daily or monthly totals for long periods). Item details stay in the app. Shared via the OS share sheet. |
 | 12 | Edit history | The backend keeps the previous version of an expense on every edit or void (`expense_history`). Writes go through database functions; clients can only read. |
+| 13 | Paid from | Chosen automatically: when the group fund has enough money, a new expense is paid from it; otherwise the form asks who paid. Editing keeps how the expense was paid. Entering items is optional; one total is the default. |
 
 
 ## 1. Project Overview

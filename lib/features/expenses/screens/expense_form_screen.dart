@@ -76,7 +76,7 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
   bool _busy = false;
   DateTime _date = today();
   ExpenseCategory _category = ExpenseCategory.groceries;
-  _EntryMode _mode = _EntryMode.itemized;
+  _EntryMode _mode = _EntryMode.singleAmount;
   PaymentSource _source = PaymentSource.personal;
   String? _paidBy;
   Set<String> _split = {};
@@ -99,7 +99,6 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
     _initialized = true;
     final existing = widget.expenseId == null ? null : s.expenseById(widget.expenseId!);
     if (existing == null) {
-      _items.add(_ItemRow());
       _paidBy = s.viewerUserId;
       _split = s.membersCoveringDay(_date).map((m) => m.userId).toSet();
       return;
@@ -127,7 +126,6 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
     } else {
       _mode = _EntryMode.singleAmount;
       _amount.text = Money.toInput(existing.quickAmountPaisa ?? 0);
-      _items.add(_ItemRow());
     }
   }
 
@@ -279,7 +277,26 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
     );
   }
 
+  /// The group fund pays whenever it has enough money; otherwise a person
+  /// pays. An edit keeps how the expense was paid.
+  PaymentSource _sourceFor(Expense? existing, int fundAvailable) {
+    if (existing != null) return existing.paymentSource;
+    return fundAvailable > 0 && _total <= fundAvailable ? PaymentSource.groupFund : PaymentSource.personal;
+  }
+
+  void _useItems() => setState(() {
+    _mode = _EntryMode.itemized;
+    if (_items.isEmpty) _items.add(_ItemRow());
+  });
+
+  void _useTotal() => setState(() {
+    final itemsTotal = _items.fold(0, (sum, row) => sum + (row.lineTotal ?? 0));
+    if (_amount.text.trim().isEmpty && itemsTotal > 0) _amount.text = Money.toInput(itemsTotal);
+    _mode = _EntryMode.singleAmount;
+  });
+
   Widget _form(BuildContext context, GroupSnapshot s) {
+    final palette = NeuPalette.of(context);
     final eligible = s.membersCoveringDay(_date);
     final eligibleIds = eligible.map((m) => m.userId).toSet();
     final fund = BalanceCalculator.fundStatus(expenses: s.expenses, contributions: s.contributions);
@@ -289,8 +306,10 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
         (existing != null && !existing.isVoided && existing.paymentSource == PaymentSource.groupFund
             ? existing.totalPaisa
             : 0);
+    _source = _sourceFor(existing, fundAvailable);
     final shares = BalanceCalculator.splitEqually(_total, _split);
     final excluded = s.members.where((m) => !eligibleIds.contains(m.userId) && m.isActive).toList();
+    final allSelected = _split.length == eligibleIds.length;
 
     return Form(
       key: _formKey,
@@ -301,43 +320,40 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
             controller: _title,
             textCapitalization: TextCapitalization.sentences,
             maxLength: ExpenseValidator.maxTitleLength,
-            decoration: const InputDecoration(labelText: 'Title', hintText: 'e.g. Weekly groceries', counterText: ''),
-            validator: (v) => (v ?? '').trim().isEmpty ? 'Add a title' : null,
+            decoration: const InputDecoration(
+              labelText: 'What was it?',
+              hintText: 'e.g. Weekly groceries',
+              counterText: '',
+            ),
+            validator: (v) => (v ?? '').trim().isEmpty ? 'Say what it was for' : null,
           ),
-          const SizedBox(height: 18),
-          NeuPickerField(label: 'Date', value: AppDates.day(_date), onTap: () => _pickDate(s)),
-          const SectionHeader('Category'),
-          Wrap(
-            spacing: 14,
-            runSpacing: 14,
-            children: [
-              for (final c in ExpenseCategory.values)
-                NeuChip(
-                  leading: Icon(c.icon, size: 18, color: c.color),
-                  label: c.label,
-                  selected: _category == c,
-                  onTap: () => setState(() => _category = c),
-                ),
-            ],
-          ),
-          const SectionHeader('Amount'),
-          NeuSegmented<_EntryMode>(
-            segments: const [
-              (_EntryMode.itemized, 'Items', Icons.list_alt_rounded),
-              (_EntryMode.singleAmount, 'Total only', Icons.payments_outlined),
-            ],
-            value: _mode,
-            onChanged: (v) => setState(() => _mode = v),
-          ),
-          const SizedBox(height: 20),
-          if (_mode == _EntryMode.itemized) ...[
-            for (final (index, row) in _items.indexed)
+          const SizedBox(height: 16),
+          if (_mode == _EntryMode.singleAmount) ...[
+            NeuTextFormField(
+              controller: _amount,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(labelText: 'How much?', prefixText: 'PKR '),
+              onChanged: (_) => setState(() {}),
+              validator: (v) {
+                if (_mode != _EntryMode.singleAmount) return null;
+                final paisa = Money.tryParse(v ?? '');
+                if (paisa == null) return 'Enter the amount';
+                if (paisa <= 0) return 'Amount must be more than zero';
+                return null;
+              },
+            ),
+            _ModeLink(
+              icon: Icons.format_list_bulleted_rounded,
+              label: 'List items one by one (optional)',
+              onTap: _useItems,
+            ),
+          ] else ...[
+            for (final row in _items)
               Padding(
                 key: ObjectKey(row),
-                padding: const EdgeInsets.only(bottom: 20),
+                padding: const EdgeInsets.only(bottom: 16),
                 child: _ItemEditor(
                   row: row,
-                  index: index,
                   canRemove: _items.length > 1,
                   onChanged: () => setState(() {}),
                   onRemove: () => setState(() {
@@ -347,44 +363,48 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
                 ),
               ),
             NeuButton(
-              label: 'Add item',
+              label: 'Add another item',
               icon: Icons.add_rounded,
               primary: false,
-              height: 50,
+              height: 48,
               onPressed: () => setState(() => _items.add(_ItemRow())),
             ),
-          ] else
-            NeuTextFormField(
-              controller: _amount,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(labelText: 'Amount', prefixText: 'PKR '),
-              onChanged: (_) => setState(() {}),
-              validator: (v) {
-                if (_mode != _EntryMode.singleAmount) return null;
-                final paisa = Money.tryParse(v ?? '');
-                if (paisa == null) return 'Enter a valid amount';
-                if (paisa <= 0) return 'Amount must be more than zero';
-                return null;
-              },
-            ),
-          const SectionHeader('Paid from'),
-          NeuSegmented<PaymentSource>(
-            segments: const [
-              (PaymentSource.personal, 'Own pocket', Icons.person_outline_rounded),
-              (PaymentSource.groupFund, 'Group fund', Icons.savings_outlined),
+            _ModeLink(icon: Icons.payments_outlined, label: 'Enter one total instead', onTap: _useTotal),
+          ],
+          const SizedBox(height: 12),
+          NeuPickerField(label: 'Date', value: AppDates.day(_date), onTap: () => _pickDate(s)),
+          const NeuSectionLabel('Category'),
+          NeuChipGrid(
+            children: [
+              for (final c in ExpenseCategory.values)
+                NeuChip(
+                  expand: true,
+                  leading: Icon(c.icon, size: 16, color: c.color),
+                  label: c.label,
+                  selected: _category == c,
+                  onTap: () => setState(() => _category = c),
+                ),
             ],
-            value: _source,
-            onChanged: (v) => setState(() => _source = v),
           ),
-          const SizedBox(height: 18),
-          if (_source == PaymentSource.personal) ...[
-            const NeuSectionLabel('Paid by', padding: EdgeInsets.fromLTRB(6, 6, 6, 12)),
-            Wrap(
-              spacing: 14,
-              runSpacing: 14,
+          const NeuSectionLabel('Who paid?'),
+          if (_source == PaymentSource.groupFund)
+            _FundNotice(available: fundAvailable, total: _total)
+          else ...[
+            if (fundAvailable > 0 && existing == null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(6, 0, 6, 12),
+                child: Text(
+                  'The group fund has only ${Money.format(fundAvailable, roundToRupee: true)} left, '
+                  'so a person pays for this one.',
+                  style: TextStyle(fontSize: 12.5, color: palette.muted),
+                ),
+              ),
+            NeuChipGrid(
+              columns: 2,
               children: [
                 for (final m in eligible)
                   NeuChip(
+                    expand: true,
                     leading: MemberAvatar(name: m.displayName, size: 26),
                     label: m.userId == s.viewerUserId ? 'You' : m.displayName,
                     selected: _paidBy == m.userId,
@@ -392,39 +412,34 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
                   ),
               ],
             ),
-          ] else
-            Text(
-              _total > fundAvailable
-                  ? 'Only ${Money.format(fundAvailable)} left in the group fund.'
-                  : '${Money.format(fundAvailable)} left in the group fund.',
-              style: context.text.bodySmall?.copyWith(
-                color: _total > fundAvailable ? context.colors.error : context.appColors.muted,
+          ],
+          NeuSectionLabel(
+            'Who shares it?',
+            trailing: GestureDetector(
+              onTap: () => setState(() {
+                _splitTouched = true;
+                _split = allSelected ? {} : {...eligibleIds};
+              }),
+              child: Text(
+                allSelected ? 'Clear' : 'Select all',
+                style: TextStyle(color: palette.accent, fontWeight: FontWeight.w600),
               ),
             ),
-          SectionHeader(
-            'Split between',
-            trailing: TextButton(
-              onPressed: () => setState(() {
-                _splitTouched = true;
-                _split = _split.length == eligibleIds.length ? {} : {...eligibleIds};
-              }),
-              child: Text(_split.length == eligibleIds.length ? 'Clear' : 'Select all'),
-            ),
           ),
-          Wrap(
-            spacing: 14,
-            runSpacing: 14,
+          NeuChipGrid(
+            columns: 2,
             children: [
               for (final m in eligible)
                 NeuChip(
+                  expand: true,
                   leading: Icon(
                     _split.contains(m.userId) ? Icons.check_circle_rounded : Icons.circle_outlined,
                     size: 18,
-                    color: _split.contains(m.userId) ? NeuPalette.of(context).accent : NeuPalette.of(context).muted,
+                    color: _split.contains(m.userId) ? palette.accent : palette.muted,
                   ),
                   label:
                       '${m.userId == s.viewerUserId ? 'You' : m.displayName.split(' ').first}'
-                      '${_split.contains(m.userId) && _total > 0 ? '  ${Money.format(shares[m.userId] ?? 0)}' : ''}',
+                      '${_split.contains(m.userId) && _total > 0 ? ' · ${Money.format(shares[m.userId] ?? 0, roundToRupee: true)}' : ''}',
                   selected: _split.contains(m.userId),
                   onTap: () => setState(() {
                     _splitTouched = true;
@@ -434,13 +449,16 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
             ],
           ),
           if (excluded.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(
-              '${excluded.map((m) => m.displayName.split(' ').first).join(', ')} joined later, so not included.',
-              style: context.text.bodySmall?.copyWith(color: context.appColors.muted),
+            const SizedBox(height: 10),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: Text(
+                '${excluded.map((m) => m.displayName.split(' ').first).join(', ')} joined later, so not included.',
+                style: TextStyle(fontSize: 12.5, color: palette.muted),
+              ),
             ),
           ],
-          const SizedBox(height: 20),
+          const SizedBox(height: 22),
           NeuTextFormField(
             controller: _notes,
             textCapitalization: TextCapitalization.sentences,
@@ -454,100 +472,164 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
   }
 }
 
+/// A small text link that switches between one total and a list of items.
+class _ModeLink extends StatelessWidget {
+  const _ModeLink({required this.icon, required this.label, required this.onTap});
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = NeuPalette.of(context).accent;
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(6, 12, 6, 6),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 18, color: accent),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  label,
+                  style: TextStyle(color: accent, fontWeight: FontWeight.w600, fontSize: 13.5),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Shown instead of "who paid" when the group fund covers the expense.
+class _FundNotice extends StatelessWidget {
+  const _FundNotice({required this.available, required this.total});
+
+  final int available;
+  final int total;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = NeuPalette.of(context);
+    final short = total > available;
+    return NeuBox(
+      radius: 26,
+      padding: const EdgeInsets.fromLTRB(12, 12, 16, 12),
+      child: Row(
+        children: [
+          const NeuIconDisc(icon: Icons.savings_rounded, color: NeuHues.violet, size: 46),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Paid from the group fund',
+                  style: TextStyle(fontWeight: FontWeight.w600, color: palette.text),
+                ),
+                Text(
+                  short
+                      ? 'Only ${Money.format(available, roundToRupee: true)} left in the fund'
+                      : '${Money.format(available, roundToRupee: true)} left in the fund',
+                  style: TextStyle(fontSize: 12.5, color: short ? context.appColors.negative : palette.muted),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// One item: name, then quantity × price with the line total.
 class _ItemEditor extends StatelessWidget {
-  const _ItemEditor({
-    required this.row,
-    required this.index,
-    required this.canRemove,
-    required this.onChanged,
-    required this.onRemove,
-  });
+  const _ItemEditor({required this.row, required this.canRemove, required this.onChanged, required this.onRemove});
 
   final _ItemRow row;
-  final int index;
   final bool canRemove;
   final VoidCallback onChanged;
   final VoidCallback onRemove;
 
   @override
   Widget build(BuildContext context) {
+    final palette = NeuPalette.of(context);
     final line = row.lineTotal;
-    return AppCard(
-      padding: const EdgeInsets.fromLTRB(12, 6, 4, 12),
+    return NeuBox(
+      radius: 24,
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
       child: Column(
         children: [
-          // Fixed height so the first field's floating label never overlaps the header.
-          ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 48),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'Item ${index + 1}',
-                    style: context.text.labelLarge?.copyWith(color: context.appColors.muted),
-                  ),
-                ),
-                Text(
-                  line == null ? '—' : Money.format(line),
-                  style: context.text.titleSmall?.copyWith(fontWeight: FontWeight.w700),
-                ),
-                if (canRemove)
-                  IconButton(
-                    tooltip: 'Remove this item row',
-                    onPressed: onRemove,
-                    icon: const Icon(Icons.close, size: 20),
-                  )
-                else
-                  const SizedBox(width: 12),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: Column(
-              children: [
-                NeuTextFormField(
+          Row(
+            children: [
+              Expanded(
+                child: NeuTextFormField(
                   controller: row.name,
                   textCapitalization: TextCapitalization.sentences,
                   decoration: const InputDecoration(labelText: 'Item name', isDense: true),
                   validator: (v) => (v ?? '').trim().isEmpty ? 'Enter a name' : null,
                   onChanged: (_) => onChanged(),
                 ),
-                const SizedBox(height: 8),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      flex: 2,
-                      child: NeuTextFormField(
-                        controller: row.quantity,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        decoration: const InputDecoration(labelText: 'Qty', isDense: true),
-                        validator: (v) {
-                          final q = Quantity.tryParse(v ?? '');
-                          if (q == null) return 'Invalid';
-                          if (q <= 0) return 'Above 0';
-                          return null;
-                        },
-                        onChanged: (_) => onChanged(),
-                      ),
-                    ),
-                    const Padding(padding: EdgeInsets.fromLTRB(8, 12, 8, 0), child: Text('×')),
-                    Expanded(
-                      flex: 3,
-                      child: NeuTextFormField(
-                        controller: row.price,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        decoration: const InputDecoration(labelText: 'Price each', prefixText: 'PKR ', isDense: true),
-                        validator: (v) => Money.tryParse(v ?? '') == null ? 'Invalid price' : null,
-                        onChanged: (_) => onChanged(),
-                      ),
-                    ),
-                  ],
-                ),
+              ),
+              if (canRemove) ...[
+                const SizedBox(width: 10),
+                NeuIconButton(icon: Icons.close_rounded, tooltip: 'Remove item', size: 38, onPressed: onRemove),
               ],
-            ),
+            ],
           ),
+          const SizedBox(height: 10),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 78,
+                child: NeuTextFormField(
+                  controller: row.quantity,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(labelText: 'Qty', isDense: true),
+                  validator: (v) {
+                    final q = Quantity.tryParse(v ?? '');
+                    if (q == null) return 'Invalid';
+                    if (q <= 0) return 'Above 0';
+                    return null;
+                  },
+                  onChanged: (_) => onChanged(),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(8, 16, 8, 0),
+                child: Text('×', style: TextStyle(color: palette.muted)),
+              ),
+              Expanded(
+                child: NeuTextFormField(
+                  controller: row.price,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(labelText: 'Price each', prefixText: 'PKR ', isDense: true),
+                  validator: (v) => Money.tryParse(v ?? '') == null ? 'Invalid price' : null,
+                  onChanged: (_) => onChanged(),
+                ),
+              ),
+            ],
+          ),
+          if (line != null && line > 0)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(6, 10, 6, 0),
+              child: Row(
+                children: [
+                  Text('Item total', style: TextStyle(fontSize: 12.5, color: palette.muted)),
+                  const Spacer(),
+                  AmountText(line, style: const TextStyle(fontWeight: FontWeight.w600)),
+                ],
+              ),
+            ),
         ],
       ),
     );

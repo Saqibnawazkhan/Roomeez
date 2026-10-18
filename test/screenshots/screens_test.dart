@@ -81,6 +81,30 @@ void main() {
     }, skip: !_enabled);
   }
 
+  testWidgets('09b_add_expense_who_paid', (tester) async {
+    final router = await _pump(tester, user: 'u_ali');
+    router.go(Routes.addExpense('g_hostel'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(TextField, 'What was it?'), 'Biryani');
+    await tester.enterText(find.widgetWithText(TextField, 'How much?'), '900');
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(ListView).first, const Offset(0, -420));
+    await _shot(tester, '09b_add_expense_who_paid');
+  }, skip: !_enabled);
+
+  testWidgets('09c_add_expense_items', (tester) async {
+    final router = await _pump(tester, user: 'u_ali');
+    router.go(Routes.addExpense('g_apartment'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(TextField, 'What was it?'), 'Fruit chaat');
+    await tester.tap(find.text('List items one by one (optional)'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(TextField, 'Item name'), 'Bananas');
+    await tester.enterText(find.widgetWithText(TextField, 'Qty'), '2');
+    await tester.enterText(find.widgetWithText(TextField, 'Price each'), '150');
+    await _shot(tester, '09c_add_expense_items');
+  }, skip: !_enabled);
+
   testWidgets('05b_expense_filters', (tester) async {
     final router = await _pump(tester, user: 'u_ali');
     router.go(Routes.group('g_apartment', tab: GroupTab.expenses));

@@ -75,16 +75,18 @@ void main() {
   testWidgets('adding an itemized expense recalculates totals and saves it', (tester) async {
     final store = await pumpApp(tester, signedInAs: 'u_ali', location: Routes.addExpense('g_apartment'));
 
-    await tester.enterText(find.widgetWithText(TextFormField, 'Title'), 'Fruit chaat');
+    await tester.enterText(find.widgetWithText(TextFormField, 'What was it?'), 'Fruit chaat');
+    await tester.tap(find.text('List items one by one (optional)'));
+    await tester.pumpAndSettle();
     await tester.enterText(find.widgetWithText(TextFormField, 'Item name'), 'Bananas');
     await tester.enterText(find.widgetWithText(TextFormField, 'Qty'), '2');
     await tester.enterText(find.widgetWithText(TextFormField, 'Price each'), '150');
     await tester.pump();
     expect(find.text('PKR 300'), findsWidgets);
 
-    await tester.scrollUntilVisible(find.text('Add item'), 200, scrollable: find.byType(Scrollable).first);
+    await tester.scrollUntilVisible(find.text('Add another item'), 200, scrollable: find.byType(Scrollable).first);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Add item'));
+    await tester.tap(find.text('Add another item'));
     await tester.pump();
     Future<void> enter(String label, String text) async {
       final field = find.widgetWithText(TextFormField, label).last;
@@ -109,7 +111,28 @@ void main() {
     expect(saved.createdByUserId, 'u_ali');
     expect(saved.items, hasLength(2));
     expect(saved.totalPaisa, 66000);
+    // The group fund has PKR 6,210 left, so it pays automatically.
+    expect(saved.paymentSource, PaymentSource.groupFund);
+    expect(saved.paidByUserId, isNull);
+  });
+
+  testWidgets('without enough in the group fund, the form asks who paid', (tester) async {
+    final store = await pumpApp(tester, signedInAs: 'u_ali', location: Routes.addExpense('g_hostel'));
+    await tester.enterText(find.widgetWithText(TextFormField, 'What was it?'), 'Biryani');
+    await tester.enterText(find.widgetWithText(TextFormField, 'How much?'), '900');
+    await tester.pump();
+    expect(find.text('Paid from the group fund'), findsNothing);
+    await tester.scrollUntilVisible(find.text('WHO PAID?'), 200, scrollable: find.byType(Scrollable).first);
+    expect(find.widgetWithText(NeuChip, 'You'), findsWidgets);
+
+    await tester.tap(find.text('Review & save'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save expense'));
+    await tester.pumpAndSettle();
+    final saved = store.expenses.values.singleWhere((e) => e.title == 'Biryani');
     expect(saved.paymentSource, PaymentSource.personal);
+    expect(saved.paidByUserId, 'u_ali');
+    expect(saved.totalPaisa, 90000);
   });
 
   testWidgets('creating a group with a member added from the sheet and a starting fund', (tester) async {
