@@ -55,3 +55,6 @@ android/build/
 
 # Design review screenshots
 test/screenshots/goldens/
+
+# Shareable test builds
+/release/

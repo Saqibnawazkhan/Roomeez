@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../../app/providers.dart';
 import '../../../app/theme/app_theme.dart';
@@ -11,6 +13,16 @@ import '../../../core/widgets/common.dart';
 import '../../../core/widgets/neu_header.dart';
 import '../../../data/models/models.dart';
 import '../../auth/widgets/sample_user_sheet.dart';
+
+/// "0.9.0 (2)", or null where the platform can't tell (e.g. in tests).
+final appVersionProvider = FutureProvider<String?>((ref) async {
+  try {
+    final info = await PackageInfo.fromPlatform();
+    return '${info.version} (${info.buildNumber})';
+  } catch (_) {
+    return null;
+  }
+});
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -101,6 +113,19 @@ class ProfileScreen extends ConsumerWidget {
               subtitle: 'Try the app as someone else',
               onTap: () => showSampleUserSheet(context, ref),
             ),
+          const NeuSectionLabel('Help'),
+          _AccountRow(
+            icon: Icons.chat_rounded,
+            hue: NeuHues.sky,
+            title: 'Send feedback',
+            subtitle: 'Report a problem or share an idea',
+            onTap: () => SharePlus.instance.share(
+              ShareParams(
+                subject: 'Roomeez feedback',
+                text: 'Roomeez ${ref.read(appVersionProvider).value ?? ''} feedback:\n\n',
+              ),
+            ),
+          ),
           const NeuSectionLabel('Sign-in'),
           _AccountRow(
             icon: Icons.logout_rounded,
@@ -117,6 +142,15 @@ class ProfileScreen extends ConsumerWidget {
             subtitle: 'Remove your account and personal details',
             onTap: () => _deleteAccount(context, ref),
           ),
+          if (ref.watch(appVersionProvider).value case final version?)
+            Padding(
+              padding: const EdgeInsets.only(top: 28),
+              child: Text(
+                'Roomeez $version',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 12, color: context.appColors.muted),
+              ),
+            ),
         ],
       ),
     );

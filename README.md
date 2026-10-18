@@ -66,6 +66,33 @@ cd supabase/tests && npm install && npm test             # database rules
 Realtime updates are switched on by the migration (it adds the tables to the
 `supabase_realtime` publication).
 
+## Sharing a test build
+
+```
+flutter build apk --release --dart-define-from-file=supabase.env.json
+```
+
+The APK is written to `build/app/outputs/flutter-apk/app-release.apk`; a copy
+named after the version goes in `release/` (git-ignored). Raise the build
+number in `pubspec.yaml` (`version: 0.9.0+2` → `+3`) for every new test build
+so it installs as an update.
+
+Test builds are signed with this computer's debug key, the same one the
+Google sign-in Android client was registered with, so Google sign-in works.
+The Play Store release will need its own upload key and its SHA-1 added to
+Google Cloud.
+
+Before friends try it:
+
+- **Google sign-in:** in Google Cloud → *OAuth consent screen*, publish the
+  app (*In production*), or add each tester's Gmail under *Test users*.
+  Otherwise Google blocks everyone except listed testers.
+- **Email codes:** Supabase's built-in email only reaches project team members
+  and a few emails an hour. Keep custom SMTP (e.g. Gmail with an app password)
+  set under *Authentication → Emails → SMTP Settings*.
+- **Database:** run every file in `supabase/migrations/` (newest:
+  `20261018000000_delete_account.sql`).
+
 ## How the backend enforces the rules
 
 Clients can only **read** tables, and only rows of groups they are an active

@@ -28,30 +28,20 @@ class WelcomeScreen extends ConsumerWidget {
                 child: Column(
                   children: [
                     const Spacer(),
+                    // The Roomeez wordmark on a raised card.
                     NeuBox(
-                      circle: true,
-                      width: 150,
-                      height: 150,
-                      depth: 12,
-                      padding: const EdgeInsets.all(26),
-                      child: NeuBox(
-                        circle: true,
-                        depth: 5,
-                        gradient: NeuHues.gradient(NeuHues.teal),
-                        child: const Center(child: Icon(Icons.home_work_rounded, size: 46, color: Colors.white)),
+                      radius: 36,
+                      depth: 10,
+                      padding: const EdgeInsets.fromLTRB(30, 34, 30, 34),
+                      child: Image.asset(
+                        Theme.of(context).brightness == Brightness.dark
+                            ? 'assets/brand/logo_on_dark.png'
+                            : 'assets/brand/logo_on_light.png',
+                        width: 230,
+                        semanticLabel: 'Roomeez',
                       ),
                     ),
-                    const SizedBox(height: 34),
-                    Text(
-                      'ROOMEEZ',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 5,
-                        color: palette.muted,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 40),
                     Text(
                       'Shared expenses,\nmade simple.',
                       textAlign: TextAlign.center,

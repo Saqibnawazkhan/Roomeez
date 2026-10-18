@@ -233,6 +233,8 @@ void main() {
     final store = await pumpApp(tester, signedInAs: 'u_ali');
     await tester.tap(find.text('Account'));
     await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Sign out'), 200, scrollable: find.byType(Scrollable).first);
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Sign out'));
     await tester.pumpAndSettle();
     expect(find.text('Sign out?'), findsOneWidget);
@@ -244,6 +246,8 @@ void main() {
 
   testWidgets('deleting an account leaves groups, hands over management and signs out', (tester) async {
     final store = await pumpApp(tester, signedInAs: 'u_ali', location: Routes.profile);
+    await tester.scrollUntilVisible(find.text('Delete account'), 200, scrollable: find.byType(Scrollable).first);
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Delete account'));
     await tester.pumpAndSettle();
     expect(find.text('Delete your account?'), findsOneWidget);

@@ -29,7 +29,7 @@ import 'report_builder.dart';
 class PdfReportService {
   const PdfReportService();
 
-  static Future<_Fonts>? _fonts;
+  static Future<_PdfAssets>? _assets;
 
   String fileName(ReportData data) {
     final slug = data.group.name.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-');
@@ -37,48 +37,63 @@ class PdfReportService {
   }
 
   Future<Uint8List> build(ReportData data) async {
-    final fonts = await _loadFonts();
+    final assets = await _loadAssets();
     final doc = pw.Document(title: 'Expense report - ${_t(data.group.name)}', author: 'Roomeez');
     doc.addPage(
       pw.Page(
         pageTheme: pw.PageTheme(
           pageFormat: PdfPageFormat.a4,
           margin: const pw.EdgeInsets.fromLTRB(36, 36, 36, 26),
-          theme: pw.ThemeData.withFont(base: fonts.regular, bold: fonts.semiBold),
+          theme: pw.ThemeData.withFont(base: assets.regular, bold: assets.semiBold),
           buildBackground: (context) => pw.FullPage(ignoreMargins: true, child: pw.Container(color: _base)),
         ),
-        build: (context) => _ReportPage(data, fonts).build(),
+        build: (context) => _ReportPage(data, assets).build(),
       ),
     );
     return doc.save();
   }
 
-  static Future<_Fonts> _loadFonts() async {
+  static Future<_PdfAssets> _loadAssets() async {
     try {
-      return await (_fonts ??= _Fonts.load());
+      return await (_assets ??= _PdfAssets.load());
     } catch (_) {
-      _fonts = null;
+      _assets = null;
       rethrow;
     }
   }
 }
 
-class _Fonts {
-  const _Fonts({required this.light, required this.regular, required this.medium, required this.semiBold});
+class _PdfAssets {
+  const _PdfAssets({
+    required this.light,
+    required this.regular,
+    required this.medium,
+    required this.semiBold,
+    required this.mark,
+    required this.wordmark,
+  });
 
   final pw.Font light;
   final pw.Font regular;
   final pw.Font medium;
   final pw.Font semiBold;
 
-  static Future<_Fonts> load() async {
+  /// The Roomeez R and the full wordmark, for light backgrounds.
+  final pw.ImageProvider mark;
+  final pw.ImageProvider wordmark;
+
+  static Future<_PdfAssets> load() async {
     Future<pw.Font> poppins(String weight) async =>
         pw.Font.ttf(await rootBundle.load('assets/fonts/Poppins-$weight.ttf'));
-    return _Fonts(
+    Future<pw.ImageProvider> image(String path) async =>
+        pw.MemoryImage((await rootBundle.load(path)).buffer.asUint8List());
+    return _PdfAssets(
       light: await poppins('Light'),
       regular: await poppins('Regular'),
       medium: await poppins('Medium'),
       semiBold: await poppins('SemiBold'),
+      mark: await image('assets/brand/pdf_mark.png'),
+      wordmark: await image('assets/brand/pdf_wordmark.png'),
     );
   }
 }
@@ -98,21 +113,15 @@ final PdfColor _insetBottom = _pdf(Color.lerp(_neu.base, _neu.highlight, 0.6)!);
 
 PdfColor _pdf(Color color) => PdfColor.fromInt(color.toARGB32());
 
-String get _houseSvg {
-  final hex = _neu.accent.toARGB32().toRadixString(16).substring(2);
-  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">'
-      '<path fill="#$hex" d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>';
-}
-
 /// Height of one line in the expense list; long lists use tighter lines.
 const double _rowHeight = 18;
 const double _tightRowHeight = 16;
 
 class _ReportPage {
-  _ReportPage(this.data, this.fonts);
+  _ReportPage(this.data, this.assets);
 
   final ReportData data;
-  final _Fonts fonts;
+  final _PdfAssets assets;
 
   pw.Widget build() {
     return pw.Column(
@@ -145,7 +154,7 @@ class _ReportPage {
           alignment: pw.Alignment.center,
           circle: true,
           depth: 3.5,
-          child: pw.SvgImage(svg: _houseSvg, width: 22, height: 22),
+          child: pw.Image(assets.mark, width: 28, height: 28),
         ),
         pw.SizedBox(width: 16),
         pw.Expanded(
@@ -153,7 +162,7 @@ class _ReportPage {
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
               _label('Expense report'),
-              pw.Text(_t(data.group.name), maxLines: 1, style: _style(size: 22, font: fonts.light)),
+              pw.Text(_t(data.group.name), maxLines: 1, style: _style(size: 22, font: assets.light)),
             ],
           ),
         ),
@@ -161,7 +170,7 @@ class _ReportPage {
         pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.end,
           children: [
-            pw.Text(_t(AppDates.range(data.range)), style: _style(size: 10.5, font: fonts.medium)),
+            pw.Text(_t(AppDates.range(data.range)), style: _style(size: 10.5, font: assets.medium)),
             pw.Text('$days ${days == 1 ? 'day' : 'days'}', style: _style(size: 8, color: _muted)),
           ],
         ),
@@ -209,7 +218,7 @@ class _ReportPage {
           pw.Text(
             _t(value),
             maxLines: 1,
-            style: _style(size: 16, font: fonts.light, color: color),
+            style: _style(size: 16, font: assets.light, color: color),
           ),
           pw.Text(_t(caption), maxLines: 1, style: _style(size: 7.5, color: _muted)),
         ],
@@ -308,11 +317,11 @@ class _ReportPage {
           _avatar(b.name, 17),
           pw.SizedBox(width: 7),
           pw.Expanded(
-            child: pw.Text(_t(b.name), maxLines: 1, style: _style(size: 8.5, font: fonts.medium)),
+            child: pw.Text(_t(b.name), maxLines: 1, style: _style(size: 8.5, font: assets.medium)),
           ),
           amount(_amount(b.paidInPaisa), 48, color: _muted),
           amount(_amount(b.sharePaisa), 48, color: _muted),
-          amount(_amount(b.netPaisa, signed: true), 56, color: color, font: fonts.semiBold),
+          amount(_amount(b.netPaisa, signed: true), 56, color: color, font: assets.semiBold),
         ],
       ),
     );
@@ -341,7 +350,7 @@ class _ReportPage {
                   children: [
                     if (category != null) ...[_dot(_pdf(category.color)), pw.SizedBox(width: 5)],
                     pw.Expanded(
-                      child: pw.Text(label, style: _style(size: 8.5, font: fonts.medium)),
+                      child: pw.Text(label, style: _style(size: 8.5, font: assets.medium)),
                     ),
                     pw.Text(_amount(paisa), style: _style(size: 8.5, color: _muted)),
                   ],
@@ -434,7 +443,7 @@ class _ReportPage {
         _dot(_pdf(e.category.color)),
         pw.SizedBox(width: 6),
         pw.Expanded(
-          child: pw.Text(_t(e.title), maxLines: 1, style: _style(size: 8.5, font: fonts.medium)),
+          child: pw.Text(_t(e.title), maxLines: 1, style: _style(size: 8.5, font: assets.medium)),
         ),
         if (detailed)
           pw.SizedBox(
@@ -454,7 +463,7 @@ class _ReportPage {
       children: [
         pw.SizedBox(
           width: 76,
-          child: pw.Text(_t(label), maxLines: 1, style: _style(size: 8.5, font: fonts.medium)),
+          child: pw.Text(_t(label), maxLines: 1, style: _style(size: 8.5, font: assets.medium)),
         ),
         pw.Expanded(
           child: pw.Text(_t(detail), maxLines: 1, style: _style(size: 7.8, color: _muted)),
@@ -476,10 +485,7 @@ class _ReportPage {
         pw.Expanded(
           child: pw.Text(_t(notes.join('  ·  ')), style: _style(size: 6.8, color: _muted)),
         ),
-        pw.Text(
-          'ROOMEEZ',
-          style: _style(size: 7, font: fonts.semiBold, color: _accent, spacing: 2),
-        ),
+        pw.Image(assets.wordmark, height: 11),
       ],
     );
   }
@@ -544,7 +550,7 @@ class _ReportPage {
       decoration: pw.BoxDecoration(shape: pw.BoxShape.circle, color: _pdf(Color.lerp(_neu.base, color, 0.2)!)),
       child: pw.Text(
         _t(MemberAvatar.initials(name)),
-        style: _style(size: size * 0.38, font: fonts.semiBold, color: _pdf(color)),
+        style: _style(size: size * 0.38, font: assets.semiBold, color: _pdf(color)),
       ),
     );
   }
@@ -557,13 +563,13 @@ class _ReportPage {
 
   pw.Widget _label(String text) => pw.Text(
     text.toUpperCase(),
-    style: _style(size: 7, font: fonts.semiBold, color: _muted, spacing: 1.8),
+    style: _style(size: 7, font: assets.semiBold, color: _muted, spacing: 1.8),
   );
 
-  pw.TextStyle get _tiny => _style(size: 6.2, font: fonts.medium, color: _muted, spacing: 1.2);
+  pw.TextStyle get _tiny => _style(size: 6.2, font: assets.medium, color: _muted, spacing: 1.2);
 
   pw.TextStyle _style({double size = 9, pw.Font? font, PdfColor? color, double? spacing}) =>
-      pw.TextStyle(font: font ?? fonts.regular, fontSize: size, color: color ?? _ink, letterSpacing: spacing);
+      pw.TextStyle(font: font ?? assets.regular, fontSize: size, color: color ?? _ink, letterSpacing: spacing);
 
   /// A soft raised surface, like `NeuBox` in the app.
   pw.Widget _raisedBox({
