@@ -507,6 +507,7 @@ class NeuChip extends StatelessWidget {
     required this.onTap,
     this.leading,
     this.trailing,
+    this.expand = false,
   });
 
   final String label;
@@ -515,30 +516,70 @@ class NeuChip extends StatelessWidget {
   final Widget? leading;
   final Widget? trailing;
 
+  /// Fills the space it's given with the content centered, as in a
+  /// [NeuChipGrid]; long labels shrink to fit.
+  final bool expand;
+
   @override
   Widget build(BuildContext context) {
     final palette = NeuPalette.of(context);
+    final text = Text(
+      label,
+      maxLines: 1,
+      style: TextStyle(
+        // One smaller size in grids so every chip's text matches.
+        fontSize: expand ? 12.5 : 13.5,
+        fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+        color: selected ? palette.accent : palette.text,
+      ),
+    );
     return NeuPressable(
       onTap: onTap,
       selected: selected,
       radius: 16,
       depth: 3.5,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: expand
+          ? const EdgeInsets.symmetric(horizontal: 8)
+          : const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          if (leading != null) ...[leading!, const SizedBox(width: 8)],
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 13.5,
-              fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-              color: selected ? palette.accent : palette.text,
-            ),
-          ),
+          if (leading != null) ...[leading!, SizedBox(width: expand ? 6 : 8)],
+          if (expand)
+            Flexible(
+              child: FittedBox(fit: BoxFit.scaleDown, child: text),
+            )
+          else
+            text,
           if (trailing != null) ...[const SizedBox(width: 6), trailing!],
         ],
       ),
+    );
+  }
+}
+
+/// Chips in equal columns, so every chip in a group is the same size.
+/// Give the chips `expand: true`.
+class NeuChipGrid extends StatelessWidget {
+  const NeuChipGrid({super.key, required this.children, this.columns = 3, this.spacing = 12, this.height = 46});
+
+  final List<Widget> children;
+  final int columns;
+  final double spacing;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = ((constraints.maxWidth - spacing * (columns - 1)) / columns).floorToDouble();
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: [for (final child in children) SizedBox(width: width, height: height, child: child)],
+        );
+      },
     );
   }
 }

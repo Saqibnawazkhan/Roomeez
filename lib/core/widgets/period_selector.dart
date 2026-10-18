@@ -20,7 +20,7 @@ class PeriodSelector extends StatelessWidget {
   final List<PeriodPreset> presets;
   final EdgeInsetsGeometry padding;
 
-  /// Lays the chips out over several lines instead of one scrolling row.
+  /// Lays the chips out in an even grid instead of one scrolling row.
   final bool wrap;
 
   Future<void> _pickCustom(BuildContext context) async {
@@ -43,6 +43,7 @@ class PeriodSelector extends StatelessWidget {
     final chips = [
       for (final preset in presets)
         NeuChip(
+          expand: wrap,
           label: preset == PeriodPreset.custom && value.preset == PeriodPreset.custom
               ? AppDates.range(value.customRange!)
               : preset.label,
@@ -62,7 +63,7 @@ class PeriodSelector extends StatelessWidget {
     if (wrap) {
       return Padding(
         padding: padding,
-        child: Wrap(spacing: 12, runSpacing: 12, children: chips),
+        child: NeuChipGrid(children: chips),
       );
     }
     return SingleChildScrollView(

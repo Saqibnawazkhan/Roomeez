@@ -178,13 +178,13 @@ void main() {
     expect(find.text(store.groups['g_apartment']!.code), findsOneWidget);
   });
 
-  testWidgets('expenses: one filter sheet, removable filter tags, and a floating Add expense button', (tester) async {
+  testWidgets('expenses: one filter sheet, removable filter tags, and a round add button', (tester) async {
     await pumpApp(
       tester,
       signedInAs: 'u_ali',
       location: Routes.group('g_apartment', tab: GroupTab.expenses),
     );
-    expect(find.byTooltip('Add expense'), findsNothing);
+    expect(find.byTooltip('Add expense'), findsOneWidget);
     expect(find.text('Paratha and chai'), findsOneWidget);
 
     await tester.tap(find.byTooltip('Filter'));
@@ -201,7 +201,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Paratha and chai'), findsOneWidget);
 
-    await tester.tap(find.text('Add expense'));
+    await tester.tap(find.byTooltip('Add expense'));
     await tester.pumpAndSettle();
     expect(find.text('Review & save'), findsOneWidget);
   });

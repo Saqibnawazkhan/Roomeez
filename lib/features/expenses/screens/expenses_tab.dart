@@ -94,25 +94,15 @@ class _ExpensesTabState extends State<ExpensesTab> {
         caption: '${filtered.length} ${filtered.length == 1 ? 'expense' : 'expenses'} · ${Money.format(total)}',
         showBack: false,
       ),
+      // A plain clay "+" in the middle, above the tabs.
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: canAdd
-          ? NeuPressable(
-              onTap: () => context.push(Routes.addExpense(s.group.id)),
-              gradient: NeuHues.gradient(NeuHues.coral),
-              radius: 28,
-              depth: 5,
-              semanticLabel: 'Add expense',
-              padding: const EdgeInsets.fromLTRB(18, 14, 22, 14),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.add_rounded, color: Colors.white),
-                  SizedBox(width: 8),
-                  Text(
-                    'Add expense',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 15),
-                  ),
-                ],
-              ),
+          ? NeuIconButton(
+              icon: Icons.add_rounded,
+              tooltip: 'Add expense',
+              size: 64,
+              color: palette.text,
+              onPressed: () => context.push(Routes.addExpense(s.group.id)),
             )
           : null,
       body: ListView(
@@ -310,38 +300,42 @@ class _FilterSheetState extends State<_FilterSheet> {
                     onChanged: (p) => setState(() => _draft = _draft.withPeriod(p)),
                   ),
                   const NeuSectionLabel('Category', padding: EdgeInsets.fromLTRB(6, 24, 6, 12)),
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
+                  NeuChipGrid(
                     children: [
                       NeuChip(
                         label: 'All',
+                        expand: true,
+                        leading: Icon(Icons.apps_rounded, size: 16, color: palette.muted),
                         selected: _draft.category == null,
                         onTap: () => setState(() => _draft = _draft.withCategory(null)),
                       ),
                       for (final c in ExpenseCategory.values)
                         NeuChip(
                           label: c.label,
-                          leading: Icon(c.icon, size: 18, color: c.color),
+                          expand: true,
+                          leading: Icon(c.icon, size: 16, color: c.color),
                           selected: _draft.category == c,
                           onTap: () => setState(() => _draft = _draft.withCategory(c)),
                         ),
                     ],
                   ),
                   const NeuSectionLabel('Added or paid by', padding: EdgeInsets.fromLTRB(6, 24, 6, 12)),
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
+                  // Two per row so names have room.
+                  NeuChipGrid(
+                    columns: 2,
                     children: [
                       NeuChip(
                         label: 'Everyone',
+                        expand: true,
+                        leading: Icon(Icons.groups_rounded, size: 20, color: palette.muted),
                         selected: _draft.memberUserId == null,
                         onTap: () => setState(() => _draft = _draft.withMember(null)),
                       ),
                       for (final MapEntry(key: id, value: name) in people.entries)
                         NeuChip(
                           label: id == s.viewerUserId ? 'You' : name,
-                          leading: MemberAvatar(name: name, size: 24),
+                          expand: true,
+                          leading: MemberAvatar(name: name, size: 26),
                           selected: _draft.memberUserId == id,
                           onTap: () => setState(() => _draft = _draft.withMember(id)),
                         ),
