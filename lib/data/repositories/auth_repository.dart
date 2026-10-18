@@ -26,4 +26,10 @@ abstract interface class AuthRepository {
   Future<AppUser> updateProfile({required String name, String? phone});
 
   Future<void> signOut();
+
+  /// Deletes the signed-in account and signs out. The person leaves every
+  /// group (management passes on), pending join requests are withdrawn and
+  /// their email and number are removed. Expenses and contributions they
+  /// recorded stay in the groups' history.
+  Future<void> deleteAccount();
 }

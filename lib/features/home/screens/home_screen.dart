@@ -51,15 +51,15 @@ class HomeScreen extends ConsumerWidget {
             // The one way to the profile.
             NeuPressable(
               onTap: () => context.push(Routes.profile),
-              semanticLabel: 'Profile',
+              semanticLabel: 'Account',
               gradient: NeuHues.gradient(NeuHues.teal),
               radius: 28,
               padding: const EdgeInsets.fromLTRB(20, 22, 20, 22),
               child: Row(
                 children: [
                   Container(
-                    width: 80,
-                    height: 80,
+                    width: 64,
+                    height: 64,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
@@ -68,10 +68,10 @@ class HomeScreen extends ConsumerWidget {
                     ),
                     child: Text(
                       MemberAvatar.initials(user?.name ?? '?'),
-                      style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w600),
+                      style: const TextStyle(color: Colors.white, fontSize: 23, fontWeight: FontWeight.w600),
                     ),
                   ),
-                  const SizedBox(width: 20),
+                  const SizedBox(width: 16),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -99,7 +99,24 @@ class HomeScreen extends ConsumerWidget {
                       ],
                     ),
                   ),
-                  Icon(Icons.chevron_right_rounded, color: Colors.white.withValues(alpha: 0.9)),
+                  const SizedBox(width: 8),
+                  // Makes it clear this card opens the account screen.
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.22)),
+                        child: const Icon(Icons.manage_accounts_rounded, color: Colors.white, size: 22),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Account',
+                        style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),

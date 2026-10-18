@@ -67,7 +67,7 @@ void main() {
     '08_expense_detail': ('u_hamza', Routes.expense('g_apartment', 'e_g_apartment_3')),
     '09_add_expense': ('u_ali', Routes.addExpense('g_apartment')),
     '10_settings': ('u_ali', Routes.groupSettings('g_apartment')),
-    '11_profile': ('u_ali', Routes.profile),
+    '11_account': ('u_ali', Routes.profile),
     '12_create_group': ('u_ali', Routes.createGroup),
     '13_report_preview': ('u_ali', '/g/g_apartment/report?start=2026-10-01&end=2026-10-15'),
     '14_group_fund': ('u_ali', Routes.groupFund('g_apartment')),

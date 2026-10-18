@@ -1,6 +1,7 @@
 import '../../core/errors/app_exception.dart';
 import '../models/models.dart';
 import '../repositories/auth_repository.dart';
+import 'mock_group_repository.dart';
 import 'mock_store.dart';
 
 /// DEMO ONLY. No email is sent; the code is always [demoCode]. "Continue with
@@ -87,6 +88,39 @@ class MockAuthRepository implements AuthRepository {
 
   @override
   Future<void> signOut() async {
+    _store.sessionUserId = null;
+    _store.notify();
+  }
+
+  @override
+  Future<void> deleteAccount() async {
+    await _store.simulateLatency();
+    final id = _store.sessionUserId;
+    final user = id == null ? null : _store.users[id];
+    if (id == null || user == null) throw const PermissionDeniedException('You are not signed in.');
+    final groups = MockGroupRepository(_store);
+    for (final m in _store.members.values.where((m) => m.userId == id && m.isActive).toList()) {
+      _store.members[m.id] = m.copyWith(
+        status: MemberStatus.left,
+        role: MemberRole.member,
+        endDate: _store.todayDate(),
+      );
+      if (m.isManager) {
+        final successor = groups.successorFor(m.groupId, leavingUserId: id);
+        if (successor != null) _store.members[successor.id] = successor.copyWith(role: MemberRole.manager);
+      }
+    }
+    for (final r in _store.joinRequests.values.where((r) => r.userId == id && r.isPending).toList()) {
+      _store.joinRequests[r.id] = r.decide(status: JoinRequestStatus.declined, byUserId: id, at: _store.now());
+    }
+    // Keep the name for the groups' history; drop the email and number.
+    _store.users[id] = AppUser(
+      id: id,
+      name: user.name,
+      isRegistered: false,
+      hasCompletedProfile: user.hasCompletedProfile,
+      createdAt: user.createdAt,
+    );
     _store.sessionUserId = null;
     _store.notify();
   }

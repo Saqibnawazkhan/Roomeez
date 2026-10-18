@@ -346,6 +346,49 @@ await test('ensure_my_profile repairs a sign-in that has no profile', async () =
   assertEqual(await scalar(late, 'select email from profiles'), 'late@example.com', 'profile created once');
 });
 
+await test('deleting an account leaves groups and removes personal details, but keeps shared records', async () => {
+  const sara = await signUp('sara@example.com', 'Sara Khan');
+  const bilal = await signUp('bilal@example.com', 'Bilal Ahmed');
+  await as(sara, `select public.update_my_profile('Sara Khan', '+923001112233')`);
+  await as(bilal, `select public.update_my_profile('Bilal Ahmed')`);
+  const saraProfile = await scalar(sara, 'select public.current_profile_id()');
+  const bilalProfile = await scalar(bilal, 'select public.current_profile_id()');
+  const flat = await scalar(sara, 'select public.create_group($1, $2, $3, $4)', [
+    'Sara flat',
+    null,
+    JSON.stringify([{ name: 'Bilal Ahmed', email: 'bilal@example.com' }]),
+    0,
+  ]);
+  const saraExpense = await scalar(sara, 'select public.add_expense($1, $2)', [
+    flat,
+    expense({ paid_by: saraProfile, split_among: [saraProfile, bilalProfile] }),
+  ]);
+  const otherCode = await scalar(bilal, 'select code from groups where id = $1', [flat]);
+  // A pending request to a group she isn't in.
+  const hostel = await scalar(bilal, 'select public.create_group($1)', ['Bilal hostel']);
+  const hostelCode = await scalar(bilal, 'select code from groups where id = $1', [hostel]);
+  assert(otherCode && hostelCode, 'codes');
+  await as(sara, 'select public.request_to_join($1, $2)', [hostelCode, 'Sara Khan']);
+
+  await as(sara, 'select public.delete_my_account()');
+
+  assertEqual(await scalar(bilal, `select role from group_members where group_id = $1 and profile_id = $2`, [flat, bilalProfile]), 'manager', 'Bilal manages now');
+  assertEqual(await scalar(bilal, `select status from group_members where group_id = $1 and profile_id = $2`, [flat, saraProfile]), 'left', 'Sara left');
+  assertEqual(await scalar(bilal, 'select created_by from expenses where id = $1', [saraExpense]), saraProfile, 'expense kept');
+  // Members only see pending requests, so read it directly.
+  assertEqual((await db.query('select status from join_requests where profile_id = $1', [saraProfile])).rows[0].status, 'declined', 'request withdrawn');
+  const left = (await db.query('select email, phone, auth_user_id from profiles where id = $1', [saraProfile])).rows[0];
+  assertEqual(left, { email: null, phone: null, auth_user_id: null }, 'personal details removed');
+  assertEqual((await db.query('select count(*)::int as n from auth.users where id = $1', [sara])).rows[0].n, 0, 'sign-in deleted');
+  assertEqual((await db.query('select count(*)::int as n from group_members where profile_id = $1 and (email is not null or phone is not null)', [saraProfile])).rows[0].n, 0, 'no contact details on memberships');
+
+  // Signing up again with the same email is a fresh account.
+  const again = await signUp('sara@example.com');
+  const fresh = await scalar(again, 'select public.current_profile_id()');
+  assert(fresh && fresh !== saraProfile, 'new profile');
+  assertEqual(await as(again, 'select id from groups'), [], 'no old groups');
+});
+
 await test('signed-out callers are rejected', async () => {
   await expectError(null, 'select public.create_group($1)', ['Nope'], 'RZ401');
 });

@@ -143,4 +143,16 @@ class SupabaseAuthRepository implements AuthRepository {
     }
     _set(null);
   }
+
+  @override
+  Future<void> deleteAccount() async {
+    await guarded(() => _client.rpc<void>('delete_my_account'));
+    // The account is gone on the server; clear this device too, even if the
+    // server no longer accepts the old session.
+    try {
+      await signOut();
+    } catch (_) {
+      _set(null);
+    }
+  }
 }

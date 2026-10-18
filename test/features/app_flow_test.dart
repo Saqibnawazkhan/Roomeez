@@ -229,6 +229,37 @@ void main() {
     expect(find.text('Review & save'), findsOneWidget);
   });
 
+  testWidgets('signing out from the account screen goes back to the welcome screen', (tester) async {
+    final store = await pumpApp(tester, signedInAs: 'u_ali');
+    await tester.tap(find.text('Account'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Sign out'));
+    await tester.pumpAndSettle();
+    expect(find.text('Sign out?'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Sign out'));
+    await tester.pumpAndSettle();
+    expect(find.text('Continue with email'), findsOneWidget);
+    expect(store.sessionUserId, isNull);
+  });
+
+  testWidgets('deleting an account leaves groups, hands over management and signs out', (tester) async {
+    final store = await pumpApp(tester, signedInAs: 'u_ali', location: Routes.profile);
+    await tester.tap(find.text('Delete account'));
+    await tester.pumpAndSettle();
+    expect(find.text('Delete your account?'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Delete account'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Continue with email'), findsOneWidget);
+    expect(store.sessionUserId, isNull);
+    expect(store.users['u_ali']!.email, isNull);
+    final apartment = store.membersOf('g_apartment');
+    expect(apartment.where((m) => m.userId == 'u_ali').every((m) => !m.isActive), isTrue);
+    expect(apartment.where((m) => m.isActive && m.isManager), hasLength(1));
+    // Ali's expenses stay in the group.
+    expect(store.expenses.values.where((e) => e.createdByUserId == 'u_ali'), isNotEmpty);
+  });
+
   testWidgets('the expense list has no swipe or delete controls', (tester) async {
     await pumpApp(
       tester,
