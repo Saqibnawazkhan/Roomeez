@@ -31,7 +31,7 @@ class HomeScreen extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
           children: [
-            // Header: profile, today's date, create group (like the reference).
+            // Header: profile and today's date (like the reference).
             Row(
               children: [
                 NeuIconButton(
@@ -58,68 +58,65 @@ class HomeScreen extends ConsumerWidget {
                     ],
                   ),
                 ),
-                NeuIconButton(
-                  icon: Icons.add_rounded,
-                  tooltip: 'Create group',
-                  color: palette.accent,
-                  onPressed: () => context.push(Routes.createGroup),
-                ),
+                // Keeps the date centered.
+                const SizedBox(width: 46),
               ],
             ),
             const SizedBox(height: 30),
-            IntrinsicHeight(
+            NeuPressable(
+              onTap: () => context.push(Routes.profile),
+              radius: 28,
+              padding: const EdgeInsets.fromLTRB(20, 22, 20, 22),
+              child: Row(
+                children: [
+                  MemberAvatar(name: user?.name ?? '?', size: 84),
+                  const SizedBox(width: 20),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Hi, $firstName!',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 24, fontWeight: FontWeight.w400, color: palette.text, height: 1.2),
+                        ),
+                        if (user?.email != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            user!.email!,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(fontSize: 13, color: palette.muted),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 22),
+            SizedBox(
+              height: 104,
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Expanded(
-                    child: NeuPressable(
-                      onTap: () => context.push(Routes.profile),
-                      radius: 26,
-                      padding: const EdgeInsets.fromLTRB(12, 20, 12, 20),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          MemberAvatar(name: user?.name ?? '?', size: 76),
-                          const SizedBox(height: 14),
-                          Text(
-                            'Hi, $firstName!',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: palette.text),
-                          ),
-                          if (user?.email != null)
-                            Text(
-                              user!.email!,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(fontSize: 11.5, color: palette.muted),
-                            ),
-                        ],
-                      ),
+                    child: _ActionCard(
+                      title: 'Create group',
+                      subtitle: 'Flat or room',
+                      icon: Icons.add_home_work_rounded,
+                      onTap: () => context.push(Routes.createGroup),
                     ),
                   ),
                   const SizedBox(width: 18),
                   Expanded(
-                    child: Column(
-                      children: [
-                        Expanded(
-                          child: _ActionCard(
-                            title: 'Create group',
-                            subtitle: 'Flat or room',
-                            icon: Icons.add_home_work_rounded,
-                            onTap: () => context.push(Routes.createGroup),
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        Expanded(
-                          child: _ActionCard(
-                            title: 'Join group',
-                            subtitle: 'With a code',
-                            icon: Icons.group_add_rounded,
-                            onTap: () => context.push(Routes.joinGroup),
-                          ),
-                        ),
-                      ],
+                    child: _ActionCard(
+                      title: 'Join group',
+                      subtitle: 'With a code',
+                      icon: Icons.group_add_rounded,
+                      onTap: () => context.push(Routes.joinGroup),
                     ),
                   ),
                 ],
