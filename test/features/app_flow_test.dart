@@ -5,6 +5,7 @@ import 'package:roomeez/app/app.dart';
 import 'package:roomeez/app/providers.dart';
 import 'package:roomeez/app/router.dart';
 import 'package:roomeez/app/routes.dart';
+import 'package:roomeez/core/neu/neu.dart';
 import 'package:roomeez/data/mock/mock_store.dart';
 import 'package:roomeez/data/models/models.dart';
 
@@ -109,6 +110,42 @@ void main() {
     expect(saved.items, hasLength(2));
     expect(saved.totalPaisa, 66000);
     expect(saved.paymentSource, PaymentSource.personal);
+  });
+
+  testWidgets('creating a group with a member added from the sheet and a starting fund', (tester) async {
+    final store = await pumpApp(tester, signedInAs: 'u_ali', location: Routes.createGroup);
+    await tester.enterText(find.widgetWithText(TextField, 'Group name'), 'Test Flat');
+
+    await tester.tap(find.text('You can also add people later'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(TextField, 'Name'), 'Sara Khan');
+    await tester.enterText(find.widgetWithText(TextField, 'Email (optional)'), 'Sara.Khan@Gmail.com');
+    await tester.tap(find.widgetWithText(NeuButton, 'Add member'));
+    await tester.pumpAndSettle();
+    expect(find.text('Sara Khan'), findsOneWidget);
+    expect(find.text('sara.khan@gmail.com'), findsOneWidget);
+
+    await tester.ensureVisible(find.byType(Switch));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(Switch));
+    await tester.pumpAndSettle();
+    final amounts = find.byWidgetPredicate((w) => w is TextField && w.textAlign == TextAlign.right);
+    expect(amounts, findsNWidgets(2));
+    await tester.ensureVisible(amounts.last);
+    await tester.pumpAndSettle();
+    await tester.enterText(amounts.first, '500');
+    await tester.enterText(amounts.last, '300');
+    await tester.pump();
+    expect(find.text('PKR 800'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(NeuButton, 'Create group'));
+    await tester.pumpAndSettle();
+    final group = store.groups.values.singleWhere((g) => g.name == 'Test Flat');
+    final members = store.membersOf(group.id);
+    expect(members.map((m) => m.displayName), containsAll(['Ali Raza', 'Sara Khan']));
+    expect(members.singleWhere((m) => m.displayName == 'Sara Khan').email, 'sara.khan@gmail.com');
+    final fund = store.contributions.values.where((c) => c.groupId == group.id);
+    expect(fund.fold(0, (sum, c) => sum + c.amountPaisa), 80000);
   });
 
   testWidgets('the expense list has no swipe or delete controls', (tester) async {

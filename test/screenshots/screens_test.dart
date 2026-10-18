@@ -6,6 +6,7 @@
 // normal test runs.
 import 'dart:convert';
 
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -14,6 +15,7 @@ import 'package:roomeez/app/app.dart';
 import 'package:roomeez/app/providers.dart';
 import 'package:roomeez/app/router.dart';
 import 'package:roomeez/app/routes.dart';
+import 'package:roomeez/core/neu/neu.dart';
 
 import '../test_helpers.dart';
 
@@ -77,4 +79,36 @@ void main() {
       await _shot(tester, name);
     }, skip: !_enabled);
   }
+
+  testWidgets('12b_create_group_filled', (tester) async {
+    final router = await _pump(tester, user: 'u_ali');
+    router.go(Routes.createGroup);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(TextField, 'Group name'), 'Johar Town Flat');
+    for (final (name, email) in [('Sara Khan', 'sara.khan@gmail.com'), ('Omar Farooq', '')]) {
+      await tester.tap(find.text('You can also add people later'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.widgetWithText(TextField, 'Name'), name);
+      await tester.enterText(find.widgetWithText(TextField, 'Email (optional)'), email);
+      if (name == 'Omar Farooq') {
+        await _shot(tester, '12c_member_sheet');
+      }
+      await tester.tap(find.widgetWithText(NeuButton, 'Add member'));
+      await tester.pumpAndSettle();
+    }
+    await tester.scrollUntilVisible(
+      find.byType(Switch),
+      200,
+      scrollable: find.descendant(of: find.byType(ListView), matching: find.byType(Scrollable)).first,
+    );
+    await tester.tap(find.byType(Switch));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Fund total'),
+      200,
+      scrollable: find.descendant(of: find.byType(ListView), matching: find.byType(Scrollable)).first,
+    );
+    await tester.drag(find.byType(ListView), const Offset(0, -200));
+    await _shot(tester, '12b_create_group_filled');
+  }, skip: !_enabled);
 }
